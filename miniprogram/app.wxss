@@ -1,0 +1,122 @@
+/** app.wxss **/
+page {
+  /* Theme Colors */
+  --primary-color: #3B82F6;
+  --primary-light: #60A5FA;
+  --primary-dark: #2563EB;
+  --success-color: #10B981;
+  --warning-color: #F59E0B;
+  --error-color: #EF4444;
+  
+  /* Text Colors */
+  --text-main: #1F2937;
+  --text-secondary: #6B7280;
+  --text-light: #9CA3AF;
+  
+  /* Background & Border */
+  --bg-color: #F3F4F6;
+  --card-bg: #FFFFFF;
+  --border-color: #E5E7EB;
+  
+  /* Spacing */
+  --spacing-xs: 8rpx;
+  --spacing-sm: 16rpx;
+  --spacing-md: 24rpx;
+  --spacing-lg: 32rpx;
+  --spacing-xl: 48rpx;
+  
+  /* Radius */
+  --radius-sm: 8rpx;
+  --radius-md: 12rpx;
+  --radius-lg: 16rpx;
+
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica,
+    Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei',
+    sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  box-sizing: border-box;
+}
+
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Common Components Styles */
+
+/* Button - Flat Design, No Shadow */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 32rpx;
+  border-radius: var(--radius-sm);
+  font-size: 30rpx;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+.btn:active {
+  opacity: 0.8;
+}
+.btn-primary {
+  background-color: var(--primary-color);
+  color: #FFFFFF;
+}
+.btn-outline {
+  background-color: transparent;
+  border: 2rpx solid var(--primary-color);
+  color: var(--primary-color);
+}
+.btn-danger {
+  background-color: var(--error-color);
+  color: #FFFFFF;
+}
+.btn-block {
+  width: 100%;
+}
+
+/* Card - Flat, 2px Border, No Shadow */
+.card {
+  background-color: var(--card-bg);
+  border: 2rpx solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Input - 2px Border */
+.input-group {
+  margin-bottom: var(--spacing-md);
+}
+.input-label {
+  display: block;
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+.input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 30rpx;
+  background-color: #fff;
+  box-sizing: border-box;
+}
+.input:focus {
+  border-color: var(--primary-color);
+}
+
+/* Utility */
+.text-center { text-align: center; }
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
+.flex-row { display: flex; flex-direction: row; }
+.flex-col { display: flex; flex-direction: column; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }

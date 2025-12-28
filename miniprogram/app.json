@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/profile/index",
+    "pages/login/index",
+    "pages/task-detail/index"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#3B82F6",
+    "navigationBarTitleText": "合伙人投票系统",
+    "navigationBarTextStyle": "white"
+  },
+  "tabBar": {
+    "color": "#6B7280",
+    "selectedColor": "#3B82F6",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "投票任务",
+        "iconPath": "assets/icons/task.png",
+        "selectedIconPath": "assets/icons/task-active.png"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "assets/icons/profile.png",
+        "selectedIconPath": "assets/icons/profile-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

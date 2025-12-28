@@ -1,0 +1,55 @@
+/* pages/login/index.wxss */
+.container {
+  padding: 48rpx;
+  background-color: var(--bg-color);
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.login-header {
+  margin-bottom: 64rpx;
+  text-align: center;
+}
+
+.title {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: var(--primary-color);
+  margin-bottom: 16rpx;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+}
+
+.login-form {
+  width: 100%;
+  padding: 48rpx;
+}
+
+.divider {
+  text-align: center;
+  position: relative;
+  margin-bottom: var(--spacing-md);
+}
+
+.divider-text {
+  background-color: var(--card-bg);
+  padding: 0 16rpx;
+  color: var(--text-light);
+  font-size: 24rpx;
+}
+
+.footer {
+  position: absolute;
+  bottom: 48rpx;
+  width: 100%;
+  text-align: center;
+  left: 0;
+}
+
+.copyright {
+  font-size: 24rpx;
+  color: var(--text-light);
+}

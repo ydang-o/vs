@@ -1,0 +1,18 @@
+/* src/assets/main.css */
+:root {
+  --primary-color: #3B82F6;
+  --bg-color: #F3F4F6;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-color);
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--primary-color);
+  --el-button-border-color: var(--primary-color);
+  --el-button-hover-bg-color: #60A5FA;
+  --el-button-hover-border-color: #60A5FA;
+}
