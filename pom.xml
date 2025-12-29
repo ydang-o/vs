@@ -8,14 +8,14 @@
         <groupId>org.springframework.boot</groupId>
         <version>2.7.3</version>
     </parent>
-    <groupId>com.diy</groupId>
-    <artifactId>diy-bangle</artifactId>
+    <groupId>com.voting</groupId>
+    <artifactId>partner-voting</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
-        <module>diy-common</module>
-        <module>diy-pojo</module>
-        <module>diy-server</module>
+        <module>partner-voting-common</module>
+        <module>partner-voting-pojo</module>
+        <module>partner-voting-server</module>
     </modules>
     <properties>
         <mybatis.spring>2.2.0</mybatis.spring>
