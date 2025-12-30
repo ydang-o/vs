@@ -1,10 +1,8 @@
 package com.voting.mapper;
 
 import com.github.pagehelper.Page;
-import com.voting.annotation.AutoFill;
 import com.voting.dto.EmployeePageQueryDTO;
 import com.voting.entity.Employee;
-import com.voting.enumeration.OperationType;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -17,23 +15,20 @@ public interface EmployeeMapper {
      * @param username
      * @return
      */
-    @Select("select * from employee where username = #{username}")
+    @Select("select id, username, real_name as name, password, phone, status, create_time from sys_user where username = #{username}")
     Employee getByUsername(String username);
 
     /**
      * 新增员工进MySQL
      * @param employee
      */
-    @Insert("insert into employee (name, username, password, phone, sex, id_number, status, create_time, update_time, create_user, update_user)"
-          +"values "+
-            "(#{name},#{username},#{password},#{phone},#{sex},#{idNumber},#{status},#{createTime},#{updateTime},#{createUser},#{updateUser})")
-    @AutoFill(value = OperationType.INSERT)
+        @Insert("insert into sys_user (username, real_name, phone, password, status, create_time)"
+          +" values (#{username}, #{name}, #{phone}, #{password}, #{status}, #{createTime})")
     void insert(Employee employee);
 
 
     Page<Employee> pageQuery(EmployeePageQueryDTO employeePageQueryDTO);
-    @AutoFill(value = OperationType.UPDATE)
     void update(Employee employee);
-    @Select("select * from employee where id=#{id}")
+        @Select("select id, username, real_name as name, password, phone, status, create_time from sys_user where id=#{id}")
     Employee getById(Long id);
 }

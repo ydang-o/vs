@@ -3,7 +3,7 @@ voting:
     driver-class-name: com.mysql.cj.jdbc.Driver
     host: localhost
     port: 3306
-    database: partner_voting
+    database: partner_vote_db
     username: root
     password: 123456
   alioss:
