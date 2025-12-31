@@ -20,8 +20,8 @@ jobs:
           distribution: 'temurin'
 
       - name: Build backend
-        run: |
-          mvn clean package -pl a-server -am -DskipTests
+        working-directory: partner-voting-server
+        run: mvn clean package -DskipTests
 
       - name: Upload jar to server
         uses: appleboy/scp-action@v0.1.7
