@@ -1,0 +1,112 @@
+version: '1.0'
+name: partner-voting-deploy
+displayName: partner-voting-deploy
+triggers:
+  trigger: auto
+  push:
+    branches:
+      prefix:
+        - ''
+stages:
+  - name: stage-70199d0c
+    displayName: 编译
+    strategy: naturally
+    trigger: auto
+    executor:
+      - A841723389
+    steps:
+      - step: build@maven
+        name: build_maven
+        displayName: Maven 构建
+        jdkVersion: '17'
+        mavenVersion: 3.6.1
+        commands:
+          - '# 功能：打包'
+          - '# 参数说明：'
+          - '#    -Dmaven.test.skip=true：跳过单元测试'
+          - '#    -U：每次构建检查依赖更新，可避免缓存中快照版本依赖不更新问题，但会牺牲部分性能'
+          - '#    -e -X ：打印调试信息，定位疑难构建问题时建议使用此参数构建'
+          - '#    -B：以batch模式运行，可避免日志打印时出现ArrayIndexOutOfBoundsException异常'
+          - '# 使用场景：打包项目且不需要执行单元测试时使用'
+          - mvn clean package -Dmaven.test.skip=true -U -e -X -B
+          - ''
+          - '# 功能：自定义settings配置'
+          - '# 使用场景：如需手工指定settings.xml，可使用如下方式'
+          - '# 注意事项：如无需自定义settings配置且需要私有依赖仓库，可在该任务配置《私有仓库》处添加私有依赖'
+          - '# mvn -U clean package -s ./settings.xml'
+          - ''
+        artifacts:
+          - name: BUILD_ARTIFACT
+            path:
+              - partner-voting-server/target
+        settings: []
+        caches:
+          - ~/.m2
+        notify: []
+        strategy:
+          retry: '0'
+      - step: publish@general_artifacts
+        name: publish_general_artifacts
+        displayName: 上传制品
+        dependArtifact: BUILD_ARTIFACT
+        artifactName: output
+        notify: []
+        strategy:
+          retry: '0'
+        dependsOn: build_maven
+  - name: stage-edd22d1d
+    displayName: 未命名
+    strategy: naturally
+    trigger: auto
+    executor: []
+    steps:
+      - step: publish@release_artifacts
+        name: publish_release_artifacts
+        displayName: 发布
+        dependArtifact: output
+        version: 1.0.0.0
+        autoIncrement: true
+        notify: []
+        strategy:
+          retry: '0'
+  - name: stage-332956ab
+    displayName: 未命名
+    strategy: naturally
+    trigger: auto
+    executor: []
+    steps:
+      - step: deploy@agent
+        name: deploy_agent
+        displayName: 主机部署
+        hostGroupID:
+          ID: 119.29.249.72
+          hostID:
+            - 3f6d534a-d136-4a06-abd8-64770b8d8df1
+        deployArtifact:
+          - source: artifact
+            name: output
+            target: ~/gitee_go/deploy
+            artifactRepository: default
+            artifactName: output
+            artifactVersion: latest
+        script:
+          - '#!/bin/bash'
+          - ''
+          - '# ====== 1. 进入后端模块 ======'
+          - cd partner-voting-server
+          - ''
+          - '# ====== 2. Maven 构建 jar（跳过测试） ======'
+          - mvn clean package -DskipTests
+          - ''
+          - '# ====== 3. 上传 jar 到服务器 ======'
+          - '# 确保 Gitee Go 变量 SERVER_HOST / SERVER_USER / SERVER_SSH_KEY 已配置'
+          - scp -o StrictHostKeyChecking=no -i $SERVER_SSH_KEY target/*.jar $SERVER_USER@$SERVER_HOST:/opt/app/app.jar
+          - ''
+          - '# ====== 4. 重启 Docker 容器 ======'
+          - ssh -o StrictHostKeyChecking=no -i $SERVER_SSH_KEY $SERVER_USER@$SERVER_HOST "cd /opt/app && docker compose restart backend"
+          - ''
+          - echo "部署完成 ✅"
+          - ''
+        notify: []
+        strategy:
+          retry: '0'
