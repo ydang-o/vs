@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @Slf4j
 @EnableCaching
 @EnableScheduling//开启任务调度
+//测试
 public class PartnerVotingApplication {
     public static void main(String[] args) {
         SpringApplication.run(PartnerVotingApplication.class, args);
