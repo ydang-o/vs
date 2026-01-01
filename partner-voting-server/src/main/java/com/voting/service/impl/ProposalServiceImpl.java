@@ -49,7 +49,7 @@ public class ProposalServiceImpl implements ProposalService {
         BeanUtils.copyProperties(proposalAddDTO, proposal);
         proposal.setProposalNo(proposalNo);
         proposal.setStatus(0); // 默认状态：草稿
-        proposal.setCreatorId(BaseContext.getCurrentId());
+        proposal.setCreatorId(BaseContext.getCurrentId()); // 拦截器已保证用户已登录
         proposal.setCreateTime(LocalDateTime.now());
 
         proposalMapper.insert(proposal);
@@ -139,8 +139,15 @@ public class ProposalServiceImpl implements ProposalService {
             throw new BaseException(MessageConstant.PROPOSAL_STATUS_NOT_ALLOW_DELETE);
         }
 
+        // 检查是否已关联投票任务
+        int voteTaskCount = proposalMapper.countVoteTasksByProposalId(id);
+        if (voteTaskCount > 0) {
+            throw new BaseException(MessageConstant.PROPOSAL_HAS_VOTE_TASK);
+        }
+
         // 删除议案
         proposalMapper.deleteById(id);
+        log.info("议案删除成功，ID：{}", id);
     }
 
     /**

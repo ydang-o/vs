@@ -39,18 +39,20 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
      *
      * @param registry
      */
-        @Override
-        protected void addInterceptors(InterceptorRegistry registry) {
+    @Override
+    protected void addInterceptors(InterceptorRegistry registry) {
         log.info("开始注册自定义拦截器...");
+        
+        // 管理端拦截器：拦截 /admin/** 和 /api/** 路径
         registry.addInterceptor(jwtTokenAdminInterceptor)
-            .addPathPatterns("/admin/**")
+            .addPathPatterns("/admin/**", "/api/**")
             .excludePathPatterns("/admin/employee/login", "/admin/user/login");
 
+        // 用户端拦截器
         registry.addInterceptor(jwtTokenUserInterceptor)
             .addPathPatterns("/user/**")
-            .excludePathPatterns("/user/user/login")
-            .excludePathPatterns("/user/shop//status");
-        }
+            .excludePathPatterns("/user/user/login", "/user/shop/status");
+    }
 
     /**
      * 通过knife4j生成接口文档

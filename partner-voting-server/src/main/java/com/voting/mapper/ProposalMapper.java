@@ -67,4 +67,12 @@ public interface ProposalMapper {
      * @param status 状态
      */
     void updateStatus(Long id, Integer status);
+
+    /**
+     * 统计议案关联的投票任务数量
+     * @param proposalId 议案ID
+     * @return 投票任务数量
+     */
+    @Select("select count(1) from vote_task where proposal_id = #{proposalId}")
+    int countVoteTasksByProposalId(Long proposalId);
 }
