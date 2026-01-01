@@ -20,10 +20,15 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'maven'
 
-      # 3. 构建 Spring Boot
+      # 3. 验证 Java 版本并构建
       - name: Build backend
         run: |
+          export JAVA_HOME=$JAVA_HOME_17_X64
+          export PATH=$JAVA_HOME/bin:$PATH
+          java -version
+          mvn -version
           mvn clean package -DskipTests
         shell: bash
 

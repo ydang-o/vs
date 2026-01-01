@@ -18,6 +18,10 @@
         <module>partner-voting-server</module>
     </modules>
     <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <java.version>17</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mybatis.spring>2.2.0</mybatis.spring>
         <lombok>1.18.30</lombok>
         <fastjson>1.2.76</fastjson>
