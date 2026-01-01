@@ -69,8 +69,11 @@ stages:
           - tar zxvf ~/gitee_go/deploy/output.tar.gz -C /opt/app
           - rm -f /opt/app/app.jar
           - cp /opt/app/target/partner-voting-server-1.0-SNAPSHOT.jar /opt/app/app.jar
+          - cp /opt/app/docker-compose.yml /opt/app/docker-compose.yml.bak || true
           - cd /opt/app
-          - docker compose up -d backend
+          - docker stop springboot-app || true
+          - docker rm springboot-app || true
+          - docker run -d --name springboot-app --network app_default -p 8080:8080 -v /opt/app/app.jar:/app.jar -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql-db:3306/partner_vote_db?useSSL=false&serverTimezone=Asia/Shanghai" -e SPRING_DATASOURCE_USERNAME=root -e SPRING_DATASOURCE_PASSWORD=123456cdut -e SPRING_REDIS_HOST=redis-cache --restart always eclipse-temurin:17 java -Xms256m -Xmx512m -jar /app.jar
           - ''
         notify: []
         strategy:
