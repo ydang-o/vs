@@ -65,21 +65,12 @@ stages:
             artifactName: output
             artifactVersion: latest
         script:
-          - '# 1. 创建目录'
           - mkdir -p /opt/app
-          - ''
-          - '# 2. 解压制品'
           - tar zxvf ~/gitee_go/deploy/output.tar.gz -C /opt/app
-          - ''
-          - '# 3. 删除旧的 app.jar（不管是文件还是目录）'
-          - rm -rf /opt/app/app.jar
-          - ''
-          - '# 4. 移动新 jar'
-          - mv /opt/app/target/*.jar /opt/app/app.jar
-          - ''
-          - '# 5. 重启容器'
+          - rm -f /opt/app/app.jar
+          - cp /opt/app/target/partner-voting-server-1.0-SNAPSHOT.jar.original /opt/app/app.jar
           - cd /opt/app
-          - docker compose restart backend
+          - docker compose up -d backend
           - ''
         notify: []
         strategy:
