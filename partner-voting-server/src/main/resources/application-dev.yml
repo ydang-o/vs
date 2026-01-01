@@ -5,7 +5,7 @@ voting:
     port: 3306
     database: partner_vote_db
     username: root
-    password: 123456
+    password: 123456cdut
   alioss:
     endpoint:
     access-key-id:
