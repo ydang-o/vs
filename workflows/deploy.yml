@@ -24,7 +24,6 @@ jobs:
       # 3. 构建 Spring Boot
       - name: Build backend
         run: |
-          cd partner-voting-server
           mvn clean package -DskipTests
         shell: bash
 
