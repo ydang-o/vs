@@ -71,10 +71,13 @@ stages:
           - '# 2. 解压制品'
           - tar zxvf ~/gitee_go/deploy/output.tar.gz -C /opt/app
           - ''
-          - '# 3. 覆盖 jar（注意：路径是 /opt/app/target）'
+          - '# 3. 删除旧的 app.jar（不管是文件还是目录）'
+          - rm -rf /opt/app/app.jar
+          - ''
+          - '# 4. 移动新 jar'
           - mv /opt/app/target/*.jar /opt/app/app.jar
           - ''
-          - '# 4. 重启容器'
+          - '# 5. 重启容器'
           - cd /opt/app
           - docker compose restart backend
           - ''
