@@ -24,5 +24,11 @@ public class MessageConstant {
     public static final String DISH_BE_RELATED_BY_SETMEAL = "当前菜品关联了套餐,不能删除";
     public static final String ORDER_STATUS_ERROR = "订单状态错误";
     public static final String ORDER_NOT_FOUND = "订单不存在";
+    
+    // 合伙人相关
+    public static final String PARTNER_USER_ALREADY_BOUND = "该用户已关联为合伙人";
+    public static final String PARTNER_NOT_FOUND = "合伙人不存在";
+    public static final String PARTNER_HAS_VOTE_RECORDS = "合伙人已参与投票，无法删除";
+    public static final String USER_NOT_FOUND = "用户不存在";
 
 }
