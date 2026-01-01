@@ -68,7 +68,7 @@ stages:
           - mkdir -p /opt/app
           - tar zxvf ~/gitee_go/deploy/output.tar.gz -C /opt/app
           - rm -f /opt/app/app.jar
-          - cp /opt/app/target/partner-voting-server-1.0-SNAPSHOT.jar.original /opt/app/app.jar
+          - cp /opt/app/target/partner-voting-server-1.0-SNAPSHOT.jar /opt/app/app.jar
           - cd /opt/app
           - docker compose up -d backend
           - ''
