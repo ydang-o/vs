@@ -34,10 +34,13 @@ services:
       - /opt/app/app.jar:/app.jar
     command: java -Xms256m -Xmx512m -jar /app.jar
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/partner_vote_db?useSSL=false&serverTimezone=Asia/Shanghai
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: 123456cdut
-      SPRING_REDIS_HOST: redis-cache
+      VOTING_DATASOURCE_HOST: mysql-db
+      VOTING_DATASOURCE_PORT: 3306
+      VOTING_DATASOURCE_DATABASE: partner_vote_db
+      VOTING_DATASOURCE_USERNAME: root
+      VOTING_DATASOURCE_PASSWORD: 123456cdut
+      VOTING_REDIS_HOST: redis-cache
+      VOTING_REDIS_PORT: 6379
     networks:
       - app-network
     depends_on:
