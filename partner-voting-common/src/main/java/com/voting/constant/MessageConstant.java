@@ -38,5 +38,21 @@ public class MessageConstant {
     public static final String PROPOSAL_STATUS_NOT_ALLOW_SUBMIT = "只有草稿状态的议案可以提交审核";
     public static final String PROPOSAL_STATUS_NOT_ALLOW_PUBLISH = "只有待发布状态的议案可以发布";
     public static final String PROPOSAL_HAS_VOTE_TASK = "议案已关联投票任务，无法删除";
+    
+    // 投票任务相关
+    public static final String VOTE_TASK_NOT_FOUND = "投票任务不存在";
+    public static final String PROPOSAL_NOT_PUBLISHED = "议案未发布，无法创建投票任务";
+    public static final String PROPOSAL_ALREADY_HAS_VOTE_TASK = "议案已关联投票任务";
+    public static final String VOTE_TIME_INVALID = "投票开始时间必须早于截止时间";
+    public static final String NO_QUALIFIED_PARTNERS = "没有符合条件的合伙人";
+    public static final String VOTE_TASK_NOT_IN_PROGRESS = "投票任务未在进行中";
+    public static final String VOTE_TASK_ALREADY_ENDED = "投票任务已结束";
+    public static final String NOT_VOTE_PARTICIPANT = "您不是此投票任务的参与人";
+    public static final String ALREADY_VOTED = "您已投过票";
+    public static final String HAS_DELEGATED = "您已委托他人投票，无法再投票";
+    public static final String DELEGATE_NOT_FOUND = "委托记录不存在";
+    public static final String DELEGATE_ALREADY_EXISTS = "您已在此投票任务中委托他人";
+    public static final String CANNOT_DELEGATE_TO_SELF = "不能委托给自己";
+    public static final String DELEGATE_TARGET_NOT_PARTICIPANT = "被委托人不是此投票任务的参与人";
 
 }

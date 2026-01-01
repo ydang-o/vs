@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.voting.mapper.VoteTaskPartnerMapper">
+
+    <insert id="batchInsert">
+        insert into vote_task_partner (vote_task_id, partner_id, level_weight, invest_ratio, has_voted)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.voteTaskId}, #{item.partnerId}, #{item.levelWeight}, #{item.investRatio}, #{item.hasVoted})
+        </foreach>
+    </insert>
+
+    <select id="listByVoteTaskId" resultType="com.voting.vo.VoteTaskPartnerVO">
+        select
+            vtp.id,
+            vtp.partner_id,
+            p.user_id,
+            u.real_name as name,
+            u.phone,
+            p.level,
+            vtp.level_weight,
+            vtp.invest_ratio,
+            vtp.has_voted,
+            vr.vote_option
+        from vote_task_partner vtp
+        left join partner p on vtp.partner_id = p.id
+        left join sys_user u on p.user_id = u.id
+        left join vote_record vr on vr.vote_task_id = vtp.vote_task_id and vr.partner_id = vtp.partner_id
+        where vtp.vote_task_id = #{voteTaskId}
+        order by p.level, vtp.partner_id
+    </select>
+
+    <select id="getByVoteTaskIdAndPartnerId" resultType="com.voting.entity.VoteTaskPartner">
+        select * from vote_task_partner 
+        where vote_task_id = #{voteTaskId} and partner_id = #{partnerId}
+    </select>
+
+    <update id="updateHasVoted">
+        update vote_task_partner 
+        set has_voted = 1 
+        where vote_task_id = #{voteTaskId} and partner_id = #{partnerId}
+    </update>
+
+    <select id="countByVoteTaskId" resultType="java.lang.Integer">
+        select count(*) from vote_task_partner where vote_task_id = #{voteTaskId}
+    </select>
+
+    <select id="countVotedByVoteTaskId" resultType="java.lang.Integer">
+        select count(*) from vote_task_partner where vote_task_id = #{voteTaskId} and has_voted = 1
+    </select>
+
+</mapper>

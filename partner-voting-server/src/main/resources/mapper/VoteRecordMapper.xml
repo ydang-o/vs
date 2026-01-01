@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.voting.mapper.VoteRecordMapper">
+
+    <insert id="insert" parameterType="com.voting.entity.VoteRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into vote_record (vote_task_id, partner_id, vote_option, vote_time, is_delegate, delegate_partner_id)
+        values (#{voteTaskId}, #{partnerId}, #{voteOption}, #{voteTime}, #{isDelegate}, #{delegatePartnerId})
+    </insert>
+
+    <select id="getByVoteTaskIdAndPartnerId" resultType="com.voting.entity.VoteRecord">
+        select * from vote_record 
+        where vote_task_id = #{voteTaskId} and partner_id = #{partnerId}
+    </select>
+
+    <select id="listByVoteTaskId" resultType="com.voting.entity.VoteRecord">
+        select * from vote_record where vote_task_id = #{voteTaskId}
+        order by vote_time desc
+    </select>
+
+    <select id="countByVoteTaskIdAndOption" resultType="java.lang.Integer">
+        select count(*) from vote_record 
+        where vote_task_id = #{voteTaskId} and vote_option = #{voteOption}
+    </select>
+
+</mapper>

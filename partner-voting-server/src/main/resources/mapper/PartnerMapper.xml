@@ -61,4 +61,21 @@
         delete from partner where id = #{id}
     </delete>
 
+    <!-- 根据筛选条件查询合伙人列表 -->
+    <select id="listByFilter" resultType="com.voting.entity.Partner">
+        select * from partner
+        <where>
+            <if test="levels != null and levels.size() > 0">
+                and level in
+                <foreach collection="levels" item="level" open="(" separator="," close=")">
+                    #{level}
+                </foreach>
+            </if>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+        </where>
+        order by level, id
+    </select>
+
 </mapper>

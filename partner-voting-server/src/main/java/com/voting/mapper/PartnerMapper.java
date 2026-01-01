@@ -5,7 +5,10 @@ import com.voting.dto.PartnerPageQueryDTO;
 import com.voting.entity.Partner;
 import com.voting.vo.PartnerVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 @Mapper
 public interface PartnerMapper {
@@ -57,4 +60,20 @@ public interface PartnerMapper {
      */
     @Select("select count(1) from vote_record where partner_id = #{partnerId}")
     int countVoteRecordsByPartnerId(Long partnerId);
+
+    /**
+     * 根据用户ID查询合伙人
+     * @param userId 用户ID
+     * @return 合伙人信息
+     */
+    @Select("select * from partner where user_id = #{userId}")
+    Partner getByUserId(Long userId);
+
+    /**
+     * 根据筛选条件查询合伙人列表
+     * @param levels 层级列表
+     * @param status 状态
+     * @return 合伙人列表
+     */
+    List<Partner> listByFilter(@Param("levels") List<Integer> levels, @Param("status") Integer status);
 }
