@@ -59,14 +59,14 @@ stages:
             - 3f6d534a-d136-4a06-abd8-64770b8d8df1
         deployArtifact:
           - source: artifact
-            name: output
+            name: BUILD_ARTIFACT
             target: ~/gitee_go/deploy
             artifactRepository: default
-            artifactName: output
+            artifactName: BUILD_ARTIFACT
             artifactVersion: latest
         script:
           - mkdir -p /opt/app
-          - tar zxvf ~/gitee_go/deploy/output.tar.gz -C /opt/app
+          - tar zxvf ~/gitee_go/deploy/BUILD_ARTIFACT.tar.gz -C /opt/app
           - rm -f /opt/app/app.jar
           - cp /opt/app/target/partner-voting-server-1.0-SNAPSHOT.jar /opt/app/app.jar
           - cd /opt/app
