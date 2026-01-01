@@ -187,6 +187,34 @@ public class ProposalServiceImpl implements ProposalService {
     }
 
     /**
+     * 提交审核（草稿→待发布）
+     * @param id 议案ID
+     */
+    @Override
+    public void submitForReview(Long id) {
+        log.info("提交审核：{}", id);
+
+        // 校验议案是否存在
+        Proposal proposal = proposalMapper.getById(id);
+        if (proposal == null) {
+            throw new BaseException(MessageConstant.PROPOSAL_NOT_FOUND);
+        }
+
+        // 只有草稿状态可以提交审核
+        if (proposal.getStatus() != 0) {
+            throw new BaseException(MessageConstant.PROPOSAL_STATUS_NOT_ALLOW_SUBMIT);
+        }
+
+        // 更新状态为待发布
+        Proposal updateProposal = new Proposal();
+        updateProposal.setId(id);
+        updateProposal.setStatus(1); // 待发布
+
+        proposalMapper.update(updateProposal);
+        log.info("议案提交审核成功，ID：{}", id);
+    }
+
+    /**
      * 生成议案编号（格式：PA-2026-001）
      * @return 议案编号
      */

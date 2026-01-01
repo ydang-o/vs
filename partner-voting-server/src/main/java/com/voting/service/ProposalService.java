@@ -56,4 +56,10 @@ public interface ProposalService {
      * @return 议案详情
      */
     ProposalDetailVO preview(Long id);
+
+    /**
+     * 提交审核（草稿→待发布）
+     * @param id 议案ID
+     */
+    void submitForReview(Long id);
 }

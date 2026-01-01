@@ -35,6 +35,7 @@ public class MessageConstant {
     public static final String PROPOSAL_NOT_FOUND = "议案不存在";
     public static final String PROPOSAL_STATUS_NOT_ALLOW_UPDATE = "当前议案状态不允许修改";
     public static final String PROPOSAL_STATUS_NOT_ALLOW_DELETE = "只有草稿状态的议案可以删除";
+    public static final String PROPOSAL_STATUS_NOT_ALLOW_SUBMIT = "只有草稿状态的议案可以提交审核";
     public static final String PROPOSAL_STATUS_NOT_ALLOW_PUBLISH = "只有待发布状态的议案可以发布";
     public static final String PROPOSAL_HAS_VOTE_TASK = "议案已关联投票任务，无法删除";
 

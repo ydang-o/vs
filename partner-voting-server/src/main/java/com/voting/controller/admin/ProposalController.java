@@ -113,4 +113,15 @@ public class ProposalController {
         ProposalDetailVO detailVO = proposalService.preview(id);
         return Result.success(detailVO);
     }
+
+    /**
+     * 提交审核（草稿→待发布）
+     */
+    @PutMapping("/submit/{id}")
+    @ApiOperation("提交审核")
+    public Result<Void> submitForReview(@PathVariable Long id) {
+        log.info("提交审核: id={}", id);
+        proposalService.submitForReview(id);
+        return Result.success();
+    }
 }
