@@ -65,16 +65,16 @@ stages:
             artifactName: output
             artifactVersion: latest
         script:
-          - '# 1. 创建应用目录'
+          - '# 1. 创建目录'
           - mkdir -p /opt/app
           - ''
-          - '# 2. 解压 Gitee Go 自动下载的制品'
+          - '# 2. 解压制品'
           - tar zxvf ~/gitee_go/deploy/output.tar.gz -C /opt/app
           - ''
-          - '# 3. 覆盖 jar（来自 server 模块）'
-          - mv /opt/app/partner-voting-server/target/*.jar /opt/app/app.jar
+          - '# 3. 覆盖 jar（注意：路径是 /opt/app/target）'
+          - mv /opt/app/target/*.jar /opt/app/app.jar
           - ''
-          - '# 4. 重启后端容器'
+          - '# 4. 重启容器'
           - cd /opt/app
           - docker compose restart backend
           - ''
