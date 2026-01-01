@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.voting.mapper.ProposalMapper">
+
+    <!-- 新增议案 -->
+    <insert id="insert" parameterType="com.voting.entity.Proposal" useGeneratedKeys="true" keyProperty="id">
+        insert into proposal (title, proposal_no, content, status, creator_id, create_time, publish_time)
+        values (#{title}, #{proposalNo}, #{content}, #{status}, #{creatorId}, #{createTime}, #{publishTime})
+    </insert>
+
+    <!-- 分页查询议案 -->
+    <select id="pageQuery" resultType="com.voting.vo.ProposalVO">
+        select
+            p.id,
+            p.proposal_no as proposalNo,
+            p.title,
+            p.status,
+            u.real_name as creatorName,
+            p.create_time as createTime,
+            p.publish_time as publishTime
+        from proposal p
+        left join sys_user u on p.creator_id = u.id
+        <where>
+            <if test="title != null and title != ''">
+                and p.title like concat('%', #{title}, '%')
+            </if>
+            <if test="status != null">
+                and p.status = #{status}
+            </if>
+        </where>
+        order by p.create_time desc
+    </select>
+
+    <!-- 根据ID查询议案 -->
+    <select id="getById" resultType="com.voting.entity.Proposal">
+        select id, title, proposal_no, content, status, creator_id, create_time, publish_time
+        from proposal
+        where id = #{id}
+    </select>
+
+    <!-- 根据ID查询议案详情 -->
+    <select id="getDetailById" resultType="com.voting.vo.ProposalDetailVO">
+        select
+            p.id,
+            p.proposal_no as proposalNo,
+            p.title,
+            p.content,
+            p.status,
+            u.real_name as creatorName,
+            p.create_time as createTime,
+            p.publish_time as publishTime
+        from proposal p
+        left join sys_user u on p.creator_id = u.id
+        where p.id = #{id}
+    </select>
+
+    <!-- 更新议案信息 -->
+    <update id="update" parameterType="com.voting.entity.Proposal">
+        update proposal
+        <set>
+            <if test="title != null and title != ''">
+                title = #{title},
+            </if>
+            <if test="content != null and content != ''">
+                content = #{content},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="publishTime != null">
+                publish_time = #{publishTime},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 根据ID删除议案 -->
+    <delete id="deleteById">
+        delete from proposal where id = #{id}
+    </delete>
+
+    <!-- 更新议案状态 -->
+    <update id="updateStatus">
+        update proposal
+        set status = #{status}
+        <if test="status == 2">
+            , publish_time = now()
+        </if>
+        where id = #{id}
+    </update>
+
+</mapper>

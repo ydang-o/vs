@@ -30,5 +30,11 @@ public class MessageConstant {
     public static final String PARTNER_NOT_FOUND = "合伙人不存在";
     public static final String PARTNER_HAS_VOTE_RECORDS = "合伙人已参与投票，无法删除";
     public static final String USER_NOT_FOUND = "用户不存在";
+    
+    // 议案相关
+    public static final String PROPOSAL_NOT_FOUND = "议案不存在";
+    public static final String PROPOSAL_STATUS_NOT_ALLOW_UPDATE = "当前议案状态不允许修改";
+    public static final String PROPOSAL_STATUS_NOT_ALLOW_DELETE = "只有草稿状态的议案可以删除";
+    public static final String PROPOSAL_STATUS_NOT_ALLOW_PUBLISH = "只有待发布状态的议案可以发布";
 
 }
