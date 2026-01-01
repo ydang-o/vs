@@ -12,7 +12,7 @@ voting:
     access-key-secret:
     bucket-name:
   redis:
-    host: redis-cache
+    host: mysql-db
     port: 6379
     password:
     database: 0
