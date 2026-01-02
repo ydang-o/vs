@@ -15,7 +15,7 @@ stages:
     executor: []
     steps:
       - step: build@maven
-        name: build_maven
+        name: build_artifact
         displayName: Maven 构建
         jdkVersion: '17'
         mavenVersion: 3.6.1
@@ -38,12 +38,17 @@ stages:
     executor: []
     steps:
       - step: deploy@agent
-        name: deploy_agent
+        name: build_artifact
         displayName: 主机部署
         hostGroupID:
           ID: 119.29.249.72
           hostID:
             - 3f6d534a-d136-4a06-abd8-64770b8d8df1
+        deployArtifact:
+          - name: build_artifact
+            target: /opt/app
+            source: build
+            dependArtifact: build_artifact
         script:
           - mkdir -p /opt/app/repo
           - cd /opt/app/repo
