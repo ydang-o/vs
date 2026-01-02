@@ -60,11 +60,9 @@ public class VoteServiceImpl implements VoteService {
     public Page<MyVoteTaskVO> getMyPendingVotes(Integer page, Integer pageSize) {
         Long partnerId = getCurrentPartnerId();
         log.info("查询待投票列表，合伙人ID：{}", partnerId);
-
-        // TODO: 需要在Mapper中添加对应的方法
-        // 这里先返回空列表，后续补充完整实现
         PageHelper.startPage(page, pageSize);
-        return new Page<>();
+        List<MyVoteTaskVO> list = voteTaskPartnerMapper.pageMyPending(partnerId);
+        return (Page<MyVoteTaskVO>) list;
     }
 
     /**
@@ -74,11 +72,9 @@ public class VoteServiceImpl implements VoteService {
     public Page<MyVoteTaskVO> getMyVotedList(Integer page, Integer pageSize) {
         Long partnerId = getCurrentPartnerId();
         log.info("查询已投票列表，合伙人ID：{}", partnerId);
-
-        // TODO: 需要在Mapper中添加对应的方法
-        // 这里先返回空列表，后续补充完整实现
         PageHelper.startPage(page, pageSize);
-        return new Page<>();
+        List<MyVoteTaskVO> list = voteTaskPartnerMapper.pageMyVoted(partnerId);
+        return (Page<MyVoteTaskVO>) list;
     }
 
     /**

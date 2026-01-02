@@ -112,4 +112,15 @@ public class VoteTaskController {
         Page<VoteTaskPartnerVO> pageResult = voteTaskService.getPartners(id, page, pageSize);
         return Result.success(new PageResult<>(pageResult.getTotal(), pageResult.getResult()));
     }
+
+    /**
+     * 新增投票任务参与人
+     */
+    @PostMapping("/partners/{id}")
+    @ApiOperation("新增投票任务参与人")
+    public Result addPartner(@PathVariable Long id, @RequestParam Long partnerId) {
+        log.info("新增投票任务参与人，taskId：{}，partnerId：{}", id, partnerId);
+        voteTaskService.addPartner(id, partnerId);
+        return Result.success();
+    }
 }

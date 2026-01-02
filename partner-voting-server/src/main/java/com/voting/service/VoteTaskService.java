@@ -47,4 +47,9 @@ public interface VoteTaskService {
      * 查询投票任务参与人列表
      */
     Page<VoteTaskPartnerVO> getPartners(Long id, Integer page, Integer pageSize);
+
+    /**
+     * 为投票任务新增参与人
+     */
+    void addPartner(Long voteTaskId, Long partnerId);
 }

@@ -50,4 +50,51 @@
         select count(*) from vote_task_partner where vote_task_id = #{voteTaskId} and has_voted = 1
     </select>
 
+    <select id="pageMyPending" resultType="com.voting.vo.MyVoteTaskVO">
+        select
+            vt.id,
+            p.title as proposal_title,
+            p.proposal_no,
+            vt.start_time,
+            vt.end_time,
+            vt.vote_type,
+            vt.vote_strategy,
+            vt.status,
+            vtp.has_voted,
+            null as my_vote_option,
+            null as vote_time,
+            case when vd.id is null then 0 else 1 end as is_delegated
+        from vote_task_partner vtp
+        join vote_task vt on vt.id = vtp.vote_task_id
+        left join proposal p on p.id = vt.proposal_id
+        left join vote_delegate vd on vd.vote_task_id = vt.id and vd.from_partner_id = vtp.partner_id and vd.status = 1
+        where vtp.partner_id = #{partnerId}
+          and vt.status = 1
+          and vtp.has_voted = 0
+        order by vt.end_time asc, vt.id desc
+    </select>
+
+    <select id="pageMyVoted" resultType="com.voting.vo.MyVoteTaskVO">
+        select
+            vt.id,
+            p.title as proposal_title,
+            p.proposal_no,
+            vt.start_time,
+            vt.end_time,
+            vt.vote_type,
+            vt.vote_strategy,
+            vt.status,
+            vtp.has_voted,
+            vr.vote_option as my_vote_option,
+            vr.vote_time,
+            vr.is_delegate as is_delegated
+        from vote_task_partner vtp
+        join vote_task vt on vt.id = vtp.vote_task_id
+        left join proposal p on p.id = vt.proposal_id
+        left join vote_record vr on vr.vote_task_id = vt.id and vr.partner_id = vtp.partner_id
+        where vtp.partner_id = #{partnerId}
+          and vtp.has_voted = 1
+        order by vr.vote_time desc, vt.end_time desc, vt.id desc
+    </select>
+
 </mapper>
