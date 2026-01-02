@@ -64,8 +64,4 @@ public class VoteTask implements Serializable {
      */
     private LocalDateTime createTime;
 
-    /**
-     * 创建人ID
-     */
-    private Long creatorId;
 }

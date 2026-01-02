@@ -4,8 +4,8 @@
 <mapper namespace="com.voting.mapper.VoteTaskMapper">
 
     <insert id="insert" parameterType="com.voting.entity.VoteTask" useGeneratedKeys="true" keyProperty="id">
-        insert into vote_task (proposal_id, start_time, end_time, vote_type, vote_strategy, pass_rate, status, create_time, creator_id)
-        values (#{proposalId}, #{startTime}, #{endTime}, #{voteType}, #{voteStrategy}, #{passRate}, #{status}, #{createTime}, #{creatorId})
+        insert into vote_task (proposal_id, start_time, end_time, vote_type, vote_strategy, pass_rate, status, create_time)
+        values (#{proposalId}, #{startTime}, #{endTime}, #{voteType}, #{voteStrategy}, #{passRate}, #{status}, #{createTime})
     </insert>
 
     <select id="getById" resultType="com.voting.entity.VoteTask">

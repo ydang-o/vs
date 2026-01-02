@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,7 +110,6 @@ public class VoteTaskServiceImpl implements VoteTaskService {
                 .passRate(voteTaskCreateDTO.getPassRate())
                 .status(StatusConstant.VOTE_TASK_IN_PROGRESS)
                 .createTime(LocalDateTime.now())
-                .creatorId(BaseContext.getCurrentId())
                 .build();
         
         voteTaskMapper.insert(voteTask);
@@ -411,5 +411,45 @@ public class VoteTaskServiceImpl implements VoteTaskService {
         List<VoteTaskPartnerVO> list = voteTaskPartnerMapper.listByVoteTaskId(id);
         
         return (Page<VoteTaskPartnerVO>) list;
+    }
+
+    /**
+     * 为投票任务新增参与人
+     */
+    @Override
+    @Transactional
+    public void addPartner(Long voteTaskId, Long partnerId) {
+        log.info("为投票任务新增参与人，taskId：{}，partnerId：{}", voteTaskId, partnerId);
+
+        VoteTask voteTask = voteTaskMapper.getById(voteTaskId);
+        if (voteTask == null) {
+            throw new BaseException(MessageConstant.VOTE_TASK_NOT_FOUND);
+        }
+        if (StatusConstant.VOTE_TASK_ENDED.equals(voteTask.getStatus())) {
+            throw new BaseException(MessageConstant.VOTE_TASK_ALREADY_ENDED);
+        }
+
+        Partner partner = partnerMapper.getById(partnerId);
+        if (partner == null) {
+            throw new BaseException(MessageConstant.PARTNER_NOT_FOUND);
+        }
+        if (!StatusConstant.ENABLE.equals(partner.getStatus())) {
+            throw new BaseException("合伙人状态不可用，无法加入投票");
+        }
+
+        VoteTaskPartner exist = voteTaskPartnerMapper.getByVoteTaskIdAndPartnerId(voteTaskId, partnerId);
+        if (exist != null) {
+            throw new BaseException("该合伙人已在参与名单中");
+        }
+
+        VoteTaskPartner toInsert = VoteTaskPartner.builder()
+                .voteTaskId(voteTaskId)
+                .partnerId(partnerId)
+                .levelWeight(getLevelWeight(partner.getLevel()))
+                .investRatio(partner.getInvestRatio())
+                .hasVoted(0)
+                .build();
+
+        voteTaskPartnerMapper.batchInsert(Collections.singletonList(toInsert));
     }
 }
