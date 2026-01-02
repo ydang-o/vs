@@ -24,7 +24,7 @@ stages:
         artifacts:
           - name: build_artifact
             path:
-              - build_artifact
+              - partner-voting-server/target/partner-voting-server-1.0-SNAPSHOT.jar
         settings: []
         caches:
           - ~/.m2
@@ -44,30 +44,17 @@ stages:
           ID: 119.29.249.72
           hostID:
             - 3f6d534a-d136-4a06-abd8-64770b8d8df1
-        deployArtifact:
-          - name: build_artifact
-            target: /opt/app
-            source: build
-            dependArtifact: build_artifact
         script:
+          - mkdir -p /opt/app/repo
+          - cd /opt/app/repo
+          - git clone https://gitee.com/A841723389/partner-vote-backend.git . || git reset --hard && git pull
+          - git pull origin banckend || git pull gitee banckend
+          - mvn clean package -Dmaven.test.skip=true -q
+          - cp partner-voting-server/target/partner-voting-server-1.0-SNAPSHOT.jar /opt/app/app.jar
           - cd /opt/app
-          - tar -zxvf ~/gitee_go/deploy/BUILD_ARTIFACT.tar.gz -C /opt/app
-          - cp /opt/app/target/partner-voting-server-1.0-SNAPSHOT.jar /opt/app/app.jar
-          - ''
           - docker stop springboot-app || true
           - docker rm springboot-app || true
-          - docker run -d --name springboot-app --network app_default -p 8080:8080 \
-          - '  -v /opt/app/app.jar:/app.jar \'
-          - '  -e VOTING_DATASOURCE_HOST=mysql-db \'
-          - '  -e VOTING_DATASOURCE_PORT=3306 \'
-          - '  -e VOTING_DATASOURCE_DATABASE=partner_vote_db \'
-          - '  -e VOTING_DATASOURCE_USERNAME=root \'
-          - '  -e VOTING_DATASOURCE_PASSWORD=123456cdut \'
-          - '  -e VOTING_REDIS_HOST=redis-cache \'
-          - '  -e VOTING_REDIS_PORT=6379 \'
-          - '  --restart always \'
-          - '  eclipse-temurin:17 \'
-          - '  java -Xms256m -Xmx512m -jar /app.jar'
+          - docker run -d --name springboot-app --network app_default -p 8080:8080 -v /opt/app/app.jar:/app.jar -e VOTING_DATASOURCE_HOST=mysql-db -e VOTING_DATASOURCE_PORT=3306 -e VOTING_DATASOURCE_DATABASE=partner_vote_db -e VOTING_DATASOURCE_USERNAME=root -e VOTING_DATASOURCE_PASSWORD=123456cdut -e VOTING_REDIS_HOST=redis-cache -e VOTING_REDIS_PORT=6379 --restart always eclipse-temurin:17 java -Xms256m -Xmx512m -jar /app.jar
         notify: []
         strategy:
           retry: '0'
