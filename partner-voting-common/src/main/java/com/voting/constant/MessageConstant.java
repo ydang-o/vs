@@ -47,6 +47,7 @@ public class MessageConstant {
     public static final String NO_QUALIFIED_PARTNERS = "没有符合条件的合伙人";
     public static final String VOTE_TASK_NOT_IN_PROGRESS = "投票任务未在进行中";
     public static final String VOTE_TASK_ALREADY_ENDED = "投票任务已结束";
+    public static final String VOTE_TASK_NOT_ENDED = "投票任务未结束，无法导出";
     public static final String NOT_VOTE_PARTICIPANT = "您不是此投票任务的参与人";
     public static final String ALREADY_VOTED = "您已投过票";
     public static final String HAS_DELEGATED = "您已委托他人投票，无法再投票";

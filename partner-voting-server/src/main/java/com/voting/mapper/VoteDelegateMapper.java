@@ -35,4 +35,9 @@ public interface VoteDelegateMapper {
      * 更新委托状态
      */
     void updateStatus(@Param("id") Long id, @Param("status") Integer status);
+
+    /**
+     * 根据投票任务ID和被委托人ID查询有效的委托记录
+     */
+    List<VoteDelegate> listByVoteTaskIdAndToPartnerId(@Param("voteTaskId") Long voteTaskId, @Param("toPartnerId") Long toPartnerId);
 }

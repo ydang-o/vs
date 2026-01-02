@@ -57,4 +57,11 @@
         update vote_delegate set status = #{status} where id = #{id}
     </update>
 
+    <select id="listByVoteTaskIdAndToPartnerId" resultType="com.voting.entity.VoteDelegate">
+        select * from vote_delegate 
+        where vote_task_id = #{voteTaskId} 
+          and to_partner_id = #{toPartnerId}
+          and status = 1
+    </select>
+
 </mapper>

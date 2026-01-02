@@ -23,4 +23,10 @@
         where vote_task_id = #{voteTaskId} and vote_option = #{voteOption}
     </select>
 
+    <select id="listDetailByVoteTaskId" resultType="com.voting.entity.VoteRecord">
+        select * from vote_record 
+        where vote_task_id = #{voteTaskId}
+        order by vote_time asc
+    </select>
+
 </mapper>

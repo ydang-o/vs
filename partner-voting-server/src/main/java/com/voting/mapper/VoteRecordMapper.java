@@ -28,4 +28,9 @@ public interface VoteRecordMapper {
      * 统计各选项投票数（人数票）
      */
     Integer countByVoteTaskIdAndOption(@Param("voteTaskId") Long voteTaskId, @Param("voteOption") Integer voteOption);
+
+    /**
+     * 查询投票明细（实名模式）
+     */
+    List<VoteRecord> listDetailByVoteTaskId(Long voteTaskId);
 }
