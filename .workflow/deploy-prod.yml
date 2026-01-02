@@ -43,10 +43,17 @@ stages:
             - 3f6d534a-d136-4a06-abd8-64770b8d8df1
         script:
           - mkdir -p /opt/app/repo
+            - mkdir -p /opt/app/.m2
           - cd /opt/app/repo
           - git clone https://gitee.com/A841723389/partner-vote-backend.git . || (git reset --hard HEAD && git pull)
           - git pull gitee master || git pull gitee banckend
-          - mvn clean package -Dmaven.test.skip=true -q
+            # 使用容器内的 JDK17 和 Maven 构建，避免依赖宿主机环境
+            - docker run --rm \
+              -v /opt/app/repo:/workspace \
+              -v /opt/app/.m2:/root/.m2 \
+              -w /workspace \
+              maven:3.9.6-eclipse-temurin-17 \
+              mvn clean package -Dmaven.test.skip=true -q
           - cp partner-voting-server/target/partner-voting-server-1.0-SNAPSHOT.jar /opt/app/app.jar
           - cd /opt/app
           - docker stop springboot-app || true

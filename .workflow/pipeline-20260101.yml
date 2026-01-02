@@ -54,6 +54,10 @@ stages:
           - cd /opt/app/repo
           - git clone https://gitee.com/A841723389/partner-vote-backend.git . || git reset --hard && git pull
           - git pull origin banckend || git pull gitee banckend
+          - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          - export PATH=$JAVA_HOME/bin:$PATH
+          - java -version
+          - mvn -version
           - mvn clean package -Dmaven.test.skip=true -q
           - cp partner-voting-server/target/partner-voting-server-1.0-SNAPSHOT.jar /opt/app/app.jar
           - cd /opt/app
