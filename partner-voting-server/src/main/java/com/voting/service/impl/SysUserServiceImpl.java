@@ -2,7 +2,9 @@ package com.voting.service.impl;
 
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.voting.constant.MessageConstant;
 import com.voting.constant.StatusConstant;
+import com.voting.dto.PasswordEditDTO;
 import com.voting.dto.SysUserCreateDTO;
 import com.voting.dto.SysUserLoginDTO;
 import com.voting.dto.SysUserPageQueryDTO;
@@ -84,6 +86,27 @@ public class SysUserServiceImpl implements SysUserService {
     public void resetPassword(SysUserResetPasswordDTO resetPasswordDTO) {
         String encodedPassword = DigestUtils.md5DigestAsHex(resetPasswordDTO.getNewPassword().getBytes());
         sysUserMapper.updatePassword(resetPasswordDTO.getUserId(), encodedPassword);
+    }
+
+    @Override
+    public void changePassword(PasswordEditDTO passwordEditDTO) {
+        Long userId = passwordEditDTO.getEmpId();
+        // 如果未传则使用当前登录用户
+        if (userId == null) {
+            userId = com.voting.context.BaseContext.getCurrentId();
+        }
+        SysUser user = sysUserMapper.getById(userId);
+        if (user == null) {
+            throw new BaseException(MessageConstant.USER_NOT_FOUND);
+        }
+
+        String oldEncoded = DigestUtils.md5DigestAsHex(passwordEditDTO.getOldPassword().getBytes());
+        if (!oldEncoded.equals(user.getPassword())) {
+            throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
+        }
+
+        String newEncoded = DigestUtils.md5DigestAsHex(passwordEditDTO.getNewPassword().getBytes());
+        sysUserMapper.updatePassword(userId, newEncoded);
     }
 
     @Override

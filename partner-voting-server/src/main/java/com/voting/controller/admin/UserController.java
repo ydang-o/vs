@@ -1,6 +1,7 @@
 package com.voting.controller.admin;
 
 import com.voting.constant.JwtClaimsConstant;
+import com.voting.dto.PasswordEditDTO;
 import com.voting.dto.SysUserCreateDTO;
 import com.voting.dto.SysUserLoginDTO;
 import com.voting.dto.SysUserPageQueryDTO;
@@ -95,6 +96,14 @@ public class UserController {
     public Result<Void> resetPassword(@RequestBody SysUserResetPasswordDTO resetPasswordDTO) {
         log.info("重置用户密码: {}", resetPasswordDTO.getUserId());
         sysUserService.resetPassword(resetPasswordDTO);
+        return Result.success();
+    }
+
+    @PutMapping("/changePassword")
+    @ApiOperation("用户修改密码（校验旧密码）")
+    public Result<Void> changePassword(@RequestBody PasswordEditDTO passwordEditDTO) {
+        log.info("用户修改密码: {}", passwordEditDTO.getEmpId());
+        sysUserService.changePassword(passwordEditDTO);
         return Result.success();
     }
 
