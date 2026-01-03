@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 合伙人分页查询DTO
@@ -13,8 +14,8 @@ import java.io.Serializable;
 @ApiModel(description = "合伙人分页查询入参")
 public class PartnerPageQueryDTO implements Serializable {
 
-    @ApiModelProperty("合伙人层级：1总部一级 2总部二级 3分部一级 4分部二级")
-    private Integer level;
+    @ApiModelProperty("合伙人层级列表（可多选）：1总部一级 2总部二级 3分部一级 4分部二级")
+    private List<Integer> levels;
 
     @ApiModelProperty("状态：1正常 0禁用")
     private Integer status;

@@ -92,12 +92,22 @@ public class VoteTaskServiceImpl implements VoteTaskService {
             throw new BaseException(MessageConstant.VOTE_TIME_INVALID);
         }
 
-        // 4. 筛选符合条件的合伙人
-        PartnerFilterDTO filter = voteTaskCreateDTO.getPartnerFilter();
-        List<Partner> partners = partnerMapper.listByFilter(filter.getLevels(), filter.getStatus());
-        
-        if (partners == null || partners.isEmpty()) {
+        // 4. 校验并获取合伙人信息
+        List<Long> partnerIds = voteTaskCreateDTO.getPartnerIds();
+        if (partnerIds == null || partnerIds.isEmpty()) {
             throw new BaseException(MessageConstant.NO_QUALIFIED_PARTNERS);
+        }
+
+        List<Partner> partners = new ArrayList<>();
+        for (Long partnerId : partnerIds) {
+            Partner partner = partnerMapper.getById(partnerId);
+            if (partner == null) {
+                throw new BaseException("合伙人ID " + partnerId + " 不存在");
+            }
+            if (!StatusConstant.ENABLE.equals(partner.getStatus())) {
+                throw new BaseException("合伙人 " + partnerId + " 状态不可用");
+            }
+            partners.add(partner);
         }
 
         // 5. 创建投票任务
@@ -169,11 +179,27 @@ public class VoteTaskServiceImpl implements VoteTaskService {
     public VoteTaskPreviewVO preview(VoteTaskCreateDTO voteTaskCreateDTO) {
         log.info("预览投票任务参与人：{}", voteTaskCreateDTO);
 
-        // 筛选符合条件的合伙人
-        PartnerFilterDTO filter = voteTaskCreateDTO.getPartnerFilter();
-        List<Partner> partners = partnerMapper.listByFilter(filter.getLevels(), filter.getStatus());
+        // 根据传入的合伙人ID列表查询合伙人信息
+        List<Long> partnerIds = voteTaskCreateDTO.getPartnerIds();
+        if (partnerIds == null || partnerIds.isEmpty()) {
+            return VoteTaskPreviewVO.builder()
+                    .totalPartners(0)
+                    .totalVotes(0)
+                    .totalInvestRatio(BigDecimal.ZERO)
+                    .requiredVotes(0)
+                    .requiredInvestRatio(BigDecimal.ZERO)
+                    .build();
+        }
 
-        if (partners == null || partners.isEmpty()) {
+        List<Partner> partners = new ArrayList<>();
+        for (Long partnerId : partnerIds) {
+            Partner partner = partnerMapper.getById(partnerId);
+            if (partner != null && StatusConstant.ENABLE.equals(partner.getStatus())) {
+                partners.add(partner);
+            }
+        }
+
+        if (partners.isEmpty()) {
             return VoteTaskPreviewVO.builder()
                     .totalPartners(0)
                     .totalVotes(0)

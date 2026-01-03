@@ -22,8 +22,11 @@
         from partner p
         left join sys_user u on p.user_id = u.id
         <where>
-            <if test="level != null">
-                and p.level = #{level}
+            <if test="levels != null and levels.size() > 0">
+                and p.level in
+                <foreach collection="levels" item="level" open="(" separator="," close=")">
+                    #{level}
+                </foreach>
             </if>
             <if test="status != null">
                 and p.status = #{status}

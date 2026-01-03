@@ -7,6 +7,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 创建投票任务DTO
@@ -37,6 +38,6 @@ public class VoteTaskCreateDTO implements Serializable {
     @ApiModelProperty(value = "通过阈值（%）", required = true)
     private Integer passRate;
 
-    @ApiModelProperty(value = "合伙人筛选条件", required = true)
-    private PartnerFilterDTO partnerFilter;
+    @ApiModelProperty(value = "参与投票的合伙人ID列表", required = true)
+    private List<Long> partnerIds;
 }
