@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.voting.constant.MessageConstant;
 import com.voting.dto.UserLoginDTO;
-import com.voting.entity.User;
+import com.voting.entity.SysUser;
 import com.voting.exception.LoginFailedException;
 import com.voting.mapper.UserMapper;
 import com.voting.properties.WeChatProperties;
@@ -29,18 +29,21 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
 
     @Override
-    public User wxLogin(UserLoginDTO userLoginDTO) {
+    public SysUser wxLogin(UserLoginDTO userLoginDTO) {
         //调用微信接口服务获取用户的openid
         String openid = getOpenId(userLoginDTO.getCode());
         if (openid == null) {
             throw new LoginFailedException(MessageConstant.LOGIN_FAILED);
         }
         //判断当前用户是否为新用户
-        User user = userMapper.getByOpenId(openid);
+        SysUser user = userMapper.getByOpenId(openid);
         //新用户,注册
         if (user == null) {
-            user = User.builder()
+            user = SysUser.builder()
                     .openid(openid)
+                    .userType(2)  // 2=微信用户
+                    .name("微信用户")  // 默认名称
+                    .status(1)  // 默认正常状态
                     .createTime(LocalDateTime.now())
                     .build();
             userMapper.insert(user);

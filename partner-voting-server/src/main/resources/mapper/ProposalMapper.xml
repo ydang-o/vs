@@ -16,7 +16,7 @@
             p.proposal_no as proposalNo,
             p.title,
             p.status,
-            u.real_name as creatorName,
+            u.name as creatorName,
             p.create_time as createTime,
             p.publish_time as publishTime
         from proposal p
@@ -47,7 +47,7 @@
             p.title,
             p.content,
             p.status,
-            u.real_name as creatorName,
+            u.name as creatorName,
             p.create_time as createTime,
             p.publish_time as publishTime
         from proposal p

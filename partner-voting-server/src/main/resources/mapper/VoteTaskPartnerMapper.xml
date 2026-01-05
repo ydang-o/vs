@@ -16,7 +16,7 @@
             vtp.id,
             vtp.partner_id,
             p.user_id,
-            u.real_name as name,
+            u.name,
             u.phone,
             p.level,
             vtp.level_weight,

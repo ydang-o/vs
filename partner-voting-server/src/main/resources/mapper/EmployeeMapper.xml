@@ -5,7 +5,7 @@
     <update id="update" parameterType="Employee">
         update sys_user
         <set>
-            <if test="name!=null">real_name=#{name},</if>
+            <if test="name!=null">name=#{name},</if>
             <if test="username!=null">username=#{username},</if>
             <if test="password!=null">password=#{password},</if>
             <if test="phone!=null">phone=#{phone},</if>
@@ -14,10 +14,10 @@
         where id=#{id}
     </update>
     <select id="pageQuery" resultType="com.voting.entity.Employee">
-        select id, username, real_name as name, password, phone, status, create_time from sys_user
+        select id, username, name, password, phone, status, create_time from sys_user
         <where>
             <if test="name!=null and name!=''">
-                and real_name like concat('%',#{name},'%')
+                and name like concat('%',#{name},'%')
             </if>
         </where>
         order by create_time desc

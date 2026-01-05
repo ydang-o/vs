@@ -332,7 +332,7 @@ public class VoteServiceImpl implements VoteService {
 
         return DelegateDetailVO.builder()
                 .fromPartnerId(delegate.getFromPartnerId())
-                .fromPartnerName(fromUser.getRealName())
+                .fromPartnerName(fromUser.getName())
                 .hasVoted(hasVoted)
                 .build();
     }
@@ -572,11 +572,11 @@ public class VoteServiceImpl implements VoteService {
             if (record.getIsDelegate() == 1 && record.getDelegatePartnerId() != null) {
                 Partner delegatePartner = partnerMapper.getById(record.getDelegatePartnerId());
                 SysUser delegateUser = sysUserMapper.getById(delegatePartner.getUserId());
-                delegateByName = delegateUser.getRealName();
+                delegateByName = delegateUser.getName();
             }
 
             VoteDetailRecordVO vo = VoteDetailRecordVO.builder()
-                    .partnerName(user.getRealName())
+                    .partnerName(user.getName())
                     .voteOption(voteOptionText)
                     .voteTime(record.getVoteTime())
                     .isDelegate(record.getIsDelegate() == 1)
@@ -793,7 +793,7 @@ public class VoteServiceImpl implements VoteService {
         }
         Partner partner = partnerMapper.getById(partnerId);
         SysUser user = partner != null ? sysUserMapper.getById(partner.getUserId()) : null;
-        String name = user != null ? user.getRealName() : "-";
+        String name = user != null ? user.getName() : "-";
         cache.put(partnerId, name);
         return name;
     }

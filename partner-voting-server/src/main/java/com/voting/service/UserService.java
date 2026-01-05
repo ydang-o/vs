@@ -1,7 +1,7 @@
 package com.voting.service;
 
 import com.voting.dto.UserLoginDTO;
-import com.voting.entity.User;
+import com.voting.entity.SysUser;
 
 public interface UserService {
     /**
@@ -9,5 +9,5 @@ public interface UserService {
      * @param userLoginDTO
      * @return
      */
-    User wxLogin(UserLoginDTO userLoginDTO);
+    SysUser wxLogin(UserLoginDTO userLoginDTO);
 }

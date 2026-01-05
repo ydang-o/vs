@@ -14,7 +14,7 @@ public class SysUserVO implements Serializable {
 
     private String username;
 
-    private String realName;
+    private String name;
 
     private String phone;
 

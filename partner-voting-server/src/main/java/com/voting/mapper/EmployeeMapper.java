@@ -15,20 +15,20 @@ public interface EmployeeMapper {
      * @param username
      * @return
      */
-    @Select("select id, username, real_name as name, password, phone, status, create_time from sys_user where username = #{username}")
+    @Select("select id, username, name, password, phone, status, create_time from sys_user where username = #{username}")
     Employee getByUsername(String username);
 
     /**
      * 新增员工进MySQL
      * @param employee
      */
-        @Insert("insert into sys_user (username, real_name, phone, password, status, create_time)"
+        @Insert("insert into sys_user (username, name, phone, password, status, create_time)"
           +" values (#{username}, #{name}, #{phone}, #{password}, #{status}, #{createTime})")
     void insert(Employee employee);
 
 
     Page<Employee> pageQuery(EmployeePageQueryDTO employeePageQueryDTO);
     void update(Employee employee);
-        @Select("select id, username, real_name as name, password, phone, status, create_time from sys_user where id=#{id}")
+        @Select("select id, username, name, password, phone, status, create_time from sys_user where id=#{id}")
     Employee getById(Long id);
 }

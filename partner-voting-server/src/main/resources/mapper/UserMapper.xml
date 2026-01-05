@@ -2,13 +2,16 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.voting.mapper.UserMapper">
-<insert id="insert" useGeneratedKeys="true" keyProperty="id">
-    insert into user(openid, name, phone, sex, id_number, avatar, create_time)
-    VALUES (#{openid},#{name},#{phone},#{sex},#{idNumber},#{avatar},#{createTime})
-</insert>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into sys_user(openid, name, phone, sex, id_number, avatar, user_type, status, create_time)
+        VALUES (#{openid}, #{name}, #{phone}, #{sex}, #{idNumber}, #{avatar}, #{userType}, #{status}, #{createTime})
+    </insert>
+    
     <select id="countByMap" resultType="java.lang.Integer">
-        select count(id) from user
+        select count(id) from sys_user
         <where>
+            <!-- 只统计微信用户 -->
+            user_type = 2
             <if test="begin!=null">
                 and create_time &gt;#{begin}
             </if>

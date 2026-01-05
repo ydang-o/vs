@@ -4,8 +4,8 @@
 <mapper namespace="com.voting.mapper.SysUserMapper">
 
     <insert id="insert" parameterType="com.voting.entity.SysUser" useGeneratedKeys="true" keyProperty="id">
-        insert into sys_user (username, real_name, phone, password, status, create_time, last_login_time)
-        values (#{username}, #{realName}, #{phone}, #{password}, #{status}, #{createTime}, #{lastLoginTime})
+        insert into sys_user (username, name, phone, password, status, create_time, last_login_time)
+        values (#{username}, #{name}, #{phone}, #{password}, #{status}, #{createTime}, #{lastLoginTime})
     </insert>
 
     <select id="pageQuery" resultType="com.voting.entity.SysUser">
@@ -27,7 +27,7 @@
     <update id="update" parameterType="com.voting.entity.SysUser">
         update sys_user
         <set>
-            <if test="realName!=null">real_name = #{realName},</if>
+            <if test="name!=null">name = #{name},</if>
             <if test="phone!=null">phone = #{phone},</if>
             <if test="status!=null">status = #{status},</if>
         </set>

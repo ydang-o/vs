@@ -1,6 +1,6 @@
 package com.voting.mapper;
 
-import com.voting.entity.User;
+import com.voting.entity.SysUser;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -13,16 +13,22 @@ public interface UserMapper {
      * @param openid
      * @return
      */
-    @Select("select * from user where openid=#{openid}")
-    User getByOpenId(String openid);
+    @Select("select * from sys_user where openid=#{openid}")
+    SysUser getByOpenId(String openid);
 
     /**
      * 插入数据
-     * @param user
+     * @param sysUser
      */
-    void insert(User user);
-@Select("select * from user where id=#{id}")
-    User getById(Long userId);
+    void insert(SysUser sysUser);
+
+    /**
+     * 根据ID查询用户
+     * @param userId
+     * @return
+     */
+    @Select("select * from sys_user where id=#{id}")
+    SysUser getById(Long userId);
 
     /**
      * 根据条件动态统计

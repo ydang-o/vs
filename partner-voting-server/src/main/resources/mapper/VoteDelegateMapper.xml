@@ -14,9 +14,9 @@
             vd.vote_task_id,
             p.title as proposal_title,
             vd.from_partner_id,
-            u1.real_name as from_partner_name,
+            u1.name as from_partner_name,
             vd.to_partner_id,
-            u2.real_name as to_partner_name,
+            u2.name as to_partner_name,
             vd.proof_file,
             vd.status,
             vd.create_time

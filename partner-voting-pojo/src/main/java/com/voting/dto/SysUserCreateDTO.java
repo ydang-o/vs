@@ -14,7 +14,7 @@ public class SysUserCreateDTO implements Serializable {
     private String username;
 
     @ApiModelProperty("真实姓名")
-    private String realName;
+    private String name;
 
     @ApiModelProperty("手机号")
     private String phone;

@@ -52,7 +52,7 @@ public class UserController {
         SysUserLoginVO vo = SysUserLoginVO.builder()
                 .id(sysUser.getId())
                 .username(sysUser.getUsername())
-                .realName(sysUser.getRealName())
+                .name(sysUser.getName())
                 .phone(sysUser.getPhone())
                 .token(token)
                 .build();

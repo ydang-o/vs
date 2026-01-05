@@ -13,7 +13,7 @@ public class SysUserLoginVO implements Serializable {
 
     private String username;
 
-    private String realName;
+    private String name;
 
     private String phone;
 

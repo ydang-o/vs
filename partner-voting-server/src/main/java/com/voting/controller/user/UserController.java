@@ -2,7 +2,7 @@ package com.voting.controller.user;
 
 import com.voting.constant.JwtClaimsConstant;
 import com.voting.dto.UserLoginDTO;
-import com.voting.entity.User;
+import com.voting.entity.SysUser;
 import com.voting.properties.JwtProperties;
 import com.voting.result.Result;
 import com.voting.service.UserService;
@@ -36,7 +36,7 @@ public class UserController {
     public Result<UserLoginVO> login(@RequestBody UserLoginDTO userLoginDTO) {
         log.info("微信授权登录:{}", userLoginDTO.getCode());
         //微信登录
-        User user = userService.wxLogin(userLoginDTO);
+        SysUser user = userService.wxLogin(userLoginDTO);
         //生成jwt令牌
         Map<String, Object> claims = new HashMap<>();
         claims.put(JwtClaimsConstant.USER_ID,user.getId());

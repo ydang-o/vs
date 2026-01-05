@@ -14,7 +14,7 @@
         select
             p.id as partnerId,
             u.username,
-            u.real_name as realName,
+            u.name,
             u.phone,
             p.level,
             p.invest_ratio as investRatio,
