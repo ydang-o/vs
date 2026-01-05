@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/vote")
+@RequestMapping("/user/vote")
 @Api(tags = "投票管理")
 @Slf4j
 public class VoteController {

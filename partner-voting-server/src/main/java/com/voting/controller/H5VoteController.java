@@ -21,7 +21,7 @@ import java.util.Map;
  * H5移动端投票接口
  */
 @RestController
-@RequestMapping("/api/h5/vote")
+@RequestMapping("/user/h5/vote")
 @Api(tags = "H5移动端投票")
 @Slf4j
 public class H5VoteController {

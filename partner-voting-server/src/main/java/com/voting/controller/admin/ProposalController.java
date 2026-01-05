@@ -20,7 +20,7 @@ import java.util.Map;
  * 议案管理接口
  */
 @RestController
-@RequestMapping("/api/proposal")
+@RequestMapping("/admin/proposal")
 @Api(tags = "议案管理接口")
 @Slf4j
 public class ProposalController {

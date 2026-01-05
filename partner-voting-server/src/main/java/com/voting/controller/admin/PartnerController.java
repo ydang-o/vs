@@ -19,7 +19,7 @@ import java.util.Map;
  * 合伙人管理接口
  */
 @RestController
-@RequestMapping("/api/partner")
+@RequestMapping("/admin/partner")
 @Api(tags = "合伙人管理接口")
 @Slf4j
 public class PartnerController {

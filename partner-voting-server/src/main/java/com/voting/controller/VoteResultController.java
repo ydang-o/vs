@@ -19,7 +19,7 @@ import java.util.List;
  * 投票结果统计接口
  */
 @RestController
-@RequestMapping("/api/vote/result")
+@RequestMapping("/user/vote/result")
 @Api(tags = "投票结果统计")
 @Slf4j
 public class VoteResultController {
