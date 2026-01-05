@@ -17,6 +17,6 @@ voting:
     password:
     database: 0
   wechat:
-    appid:
-    secret:
+    appid: wx439e92e6e8fc24df
+    secret: a15f0a7e1fc919371ebc4a3492bbe324
 

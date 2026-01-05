@@ -3,8 +3,21 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.voting.mapper.UserMapper">
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        insert into sys_user(openid, name, phone, sex, id_number, avatar, user_type, status, create_time)
-        VALUES (#{openid}, #{name}, #{phone}, #{sex}, #{idNumber}, #{avatar}, #{userType}, #{status}, #{createTime})
+        insert into sys_user
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            openid, name, user_type, status, create_time,
+            <if test="phone != null">phone,</if>
+            <if test="sex != null">sex,</if>
+            <if test="idNumber != null">id_number,</if>
+            <if test="avatar != null">avatar,</if>
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            #{openid}, #{name}, #{userType}, #{status}, #{createTime},
+            <if test="phone != null">#{phone},</if>
+            <if test="sex != null">#{sex},</if>
+            <if test="idNumber != null">#{idNumber},</if>
+            <if test="avatar != null">#{avatar},</if>
+        </trim>
     </insert>
     
     <select id="countByMap" resultType="java.lang.Integer">
