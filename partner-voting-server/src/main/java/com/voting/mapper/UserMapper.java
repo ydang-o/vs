@@ -36,4 +36,26 @@ public interface UserMapper {
      * @return
      */
     Integer countByMap(Map map);
+
+    /**
+     * 根据姓名和手机号查询用户
+     * @param name
+     * @param phone
+     * @return
+     */
+    @Select("select * from sys_user where name=#{name} and phone=#{phone}")
+    SysUser getByNameAndPhone(String name, String phone);
+
+    /**
+     * 更新用户信息
+     * @param sysUser
+     */
+    void update(SysUser sysUser);
+
+    /**
+     * 根据ID删除用户
+     * @param id
+     */
+    @Select("delete from sys_user where id=#{id}")
+    void deleteById(Long id);
 }

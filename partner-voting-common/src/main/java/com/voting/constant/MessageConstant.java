@@ -55,5 +55,15 @@ public class MessageConstant {
     public static final String DELEGATE_ALREADY_EXISTS = "您已在此投票任务中委托他人";
     public static final String CANNOT_DELEGATE_TO_SELF = "不能委托给自己";
     public static final String DELEGATE_TARGET_NOT_PARTICIPANT = "被委托人不是此投票任务的参与人";
+    
+    // 用户绑定相关
+    public static final String USER_NOT_FOUND_BY_NAME_PHONE = "未找到该姓名和手机号对应的用户";
+    public static final String USER_ALREADY_BOUND_WECHAT = "该用户已绑定微信";
+    
+    // 用户登录相关
+    public static final String USER_NOT_FOUND_BY_USERNAME = "用户名不存在";
+    public static final String USER_PASSWORD_ERROR = "密码错误";
+    public static final String USER_ACCOUNT_LOCKED = "账号已被锁定";
+    public static final String WECHAT_LOGIN_FAILED = "微信登录失败";
 
 }

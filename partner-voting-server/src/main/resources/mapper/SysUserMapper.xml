@@ -4,8 +4,8 @@
 <mapper namespace="com.voting.mapper.SysUserMapper">
 
     <insert id="insert" parameterType="com.voting.entity.SysUser" useGeneratedKeys="true" keyProperty="id">
-        insert into sys_user (username, name, phone, password, status, create_time, last_login_time)
-        values (#{username}, #{name}, #{phone}, #{password}, #{status}, #{createTime}, #{lastLoginTime})
+        insert into sys_user (username, name, phone, password, user_type, status, create_time)
+        values (#{username}, #{name}, #{phone}, #{password}, #{userType}, #{status}, #{createTime})
     </insert>
 
     <select id="pageQuery" resultType="com.voting.entity.SysUser">

@@ -60,6 +60,13 @@ public class SysUserServiceImpl implements SysUserService {
     public void add(SysUserCreateDTO sysUserCreateDTO) {
         SysUser sysUser = new SysUser();
         BeanUtils.copyProperties(sysUserCreateDTO, sysUser);
+        
+        // 如果name为空，使用username作为默认值
+        if (sysUser.getName() == null || sysUser.getName().trim().isEmpty()) {
+            sysUser.setName(sysUserCreateDTO.getUsername());
+        }
+        
+        sysUser.setUserType(1);  // 1=管理员
         sysUser.setStatus(StatusConstant.ENABLE);
         sysUser.setCreateTime(LocalDateTime.now());
         sysUser.setPassword(DigestUtils.md5DigestAsHex(sysUserCreateDTO.getPassword().getBytes()));
