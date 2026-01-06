@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * 合伙人VO
@@ -40,4 +41,7 @@ public class PartnerVO implements Serializable {
 
     @ApiModelProperty("状态：1正常 0禁用")
     private Integer status;
+
+    @ApiModelProperty("绑定时间")
+    private LocalDateTime bindTime;
 }

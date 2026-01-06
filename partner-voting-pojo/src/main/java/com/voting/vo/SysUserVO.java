@@ -21,4 +21,6 @@ public class SysUserVO implements Serializable {
     private Integer status;
 
     private LocalDateTime createTime;
+
+    private LocalDateTime lastLoginTime;
 }

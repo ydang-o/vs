@@ -18,7 +18,8 @@
             u.phone,
             p.level,
             p.invest_ratio as investRatio,
-            p.status
+            p.status,
+            p.bind_time as bindTime
         from partner p
         left join sys_user u on p.user_id = u.id
         <where>
