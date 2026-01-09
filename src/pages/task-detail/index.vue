@@ -4,8 +4,9 @@
       <view class="header">
         <text class="title">{{ task.proposal.title }}</text>
         <view class="meta">
-          <text>截止时间：{{ task.voteTask.endTime }}</text>
-        </view>
+        <text>截止时间：{{ task.voteTask.endTime }}</text>
+        <text class="stats" v-if="task.voteTask.totalCount"> · 已投票 {{ task.voteTask.votedCount }}/{{ task.voteTask.totalCount }} 人</text>
+      </view>
       </view>
       
       <view class="content">
@@ -32,6 +33,7 @@
         
         <view class="result-area" v-if="task.voteTask.hasVoted && !task.voteTask.canVote">
           <text class="result-text">您已完成投票</text>
+          <button class="view-result-btn" @click="viewResult">查看结果</button>
         </view>
       </view>
     </view>
@@ -97,7 +99,9 @@ const fetchDetail = (id) => {
           // Relaxed status check: allow if status is 1 or undefined (backward compatibility)
           canVote: voteTaskData ? ((voteTaskData.status === 1 || voteTaskData.status === undefined) && !voteTaskData.hasVoted) : false,
           canDelegateVote: voteTaskData ? voteTaskData.canDelegateVote : false,
-          hasVoted: voteTaskData ? voteTaskData.hasVoted : false
+          hasVoted: voteTaskData ? voteTaskData.hasVoted : false,
+          votedCount: voteTaskData ? (voteTaskData.votedCount || 0) : 0,
+          totalCount: voteTaskData ? (voteTaskData.totalCount || 0) : 0
         }
       }
     }
@@ -219,6 +223,19 @@ const submitDelegateVote = (fromPartnerId, option) => {
 }
 
 const handleVote = (option) => {
+  const optionText = getVoteText(option)
+  uni.showModal({
+    title: '确认投票',
+    content: `确认投"${optionText}"吗？提交后不可修改。`,
+    success: (res) => {
+      if (res.confirm) {
+        submitVote(option)
+      }
+    }
+  })
+}
+
+const submitVote = (option) => {
   uni.showLoading({ title: '提交中' })
   request({
     url: '/user/vote/submit',
@@ -230,10 +247,9 @@ const handleVote = (option) => {
   }).then(res => {
     uni.hideLoading()
     if (res.code === 0 || res.code === 1 || res.code === 200) {
-      uni.showToast({ title: '投票成功' })
-      setTimeout(() => {
-        fetchDetail(taskId.value)
-      }, 1500)
+      uni.navigateTo({
+        url: '/pages/vote-success/index'
+      })
     } else {
       uni.showToast({ title: res.msg || '投票失败', icon: 'none' })
     }
@@ -257,12 +273,31 @@ const goToDelegateCreate = () => {
     url: `/pages/delegate-create/index?taskId=${taskId.value}`
   })
 }
+
+const viewResult = () => {
+  if (task.value && task.value.voteTask && task.value.voteTask.totalCount > 0) {
+      uni.showModal({
+          title: '投票进度',
+          content: `已投票: ${task.value.voteTask.votedCount}/${task.value.voteTask.totalCount} 人`,
+          showCancel: false
+      })
+  } else {
+      uni.showToast({ title: '暂无详细结果', icon: 'none' })
+  }
+}
 </script>
 
 <style>
 .container {
   padding: 30rpx;
 }
+
+.stats {
+  margin-left: 20rpx;
+  color: #3B82F6;
+  font-weight: 500;
+}
+
 
 .detail-card {
   background-color: #fff;
@@ -358,5 +393,14 @@ const goToDelegateCreate = () => {
 .abstain {
   background-color: #9CA3AF;
   color: white;
+}
+
+.view-result-btn {
+  margin-top: 20rpx;
+  background-color: #fff;
+  color: #3B82F6;
+  border: 1px solid #3B82F6;
+  font-size: 28rpx;
+  width: 100%;
 }
 </style>

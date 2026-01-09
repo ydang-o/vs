@@ -82,6 +82,15 @@ const fetchTasks = () => {
       } else {
         tasks.value = [];
       }
+      
+      // Sort by endTime descending (Latest deadline first) as requested
+      if (tasks.value.length > 0) {
+        tasks.value.sort((a, b) => {
+          const timeA = new Date(a.endTime.replace(/-/g, '/')).getTime() || 0
+          const timeB = new Date(b.endTime.replace(/-/g, '/')).getTime() || 0
+          return timeB - timeA
+        })
+      }
     }
   }).catch(err => {
     if (err.statusCode !== 401) {

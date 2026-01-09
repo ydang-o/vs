@@ -48,6 +48,12 @@
 			"style": {
 				"navigationBarTitleText": "修改密码"
 			}
+		},
+		{
+			"path": "pages/vote-success/index",
+			"style": {
+				"navigationBarTitleText": "投票成功"
+			}
 		}
 	],
 	"globalStyle": {
