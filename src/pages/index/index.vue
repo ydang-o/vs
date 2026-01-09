@@ -13,22 +13,19 @@
         class="task-card" 
         v-for="(item, index) in tasks" 
         :key="index"
-        @click="goToDetail(item.id)"
+        @click="goToDetail(item.voteTaskId || item.id)"
       >
         <view class="card-header">
-          <text class="task-title">{{ item.title }}</text>
-          <text class="status-badge" :class="item.status === 'active' ? 'active' : 'ended'">
-            {{ item.status === 'active' ? '进行中' : '已结束' }}
-          </text>
+          <text class="task-title">{{ item.proposalTitle || item.title }}</text>
+          <view class="badge-group">
+            <text class="urgent-badge" v-if="item.urgent">紧急</text>
+            <!-- Pending list always contains active/todo tasks per definition -->
+          </view>
         </view>
         <view class="card-body">
           <view class="info-row">
             <text class="label">截止时间：</text>
-            <text class="value">{{ item.endTime }}</text>
-          </view>
-          <view class="info-row">
-            <text class="label">通过率要求：</text>
-            <text class="value">{{ item.passRate }}%</text>
+            <text class="value" :class="{ 'text-danger': isUrgent(item.endTime) }">{{ item.endTime }}</text>
           </view>
         </view>
       </view>
@@ -43,6 +40,21 @@ import request from '@/utils/request.js'
 
 const tasks = ref([])
 
+const isUrgent = (timeStr) => {
+  if (!timeStr || timeStr === '进行中') return false
+  try {
+    // Replace - with / for iOS compatibility
+    const target = new Date(timeStr.replace(/-/g, '/')).getTime()
+    if (isNaN(target)) return false
+    const now = Date.now()
+    const diff = target - now
+    // Less than 3 hours (10800000ms) and not expired
+    return diff > 0 && diff <= 10800000
+  } catch (e) {
+    return false
+  }
+}
+
 const fetchTasks = () => {
   const token = uni.getStorageSync('token')
   if (!token) {
@@ -51,11 +63,25 @@ const fetchTasks = () => {
   }
 
   request({
-    url: '/api/vote/task/list',
-    method: 'GET'
+    url: '/user/vote/my/pending',
+    method: 'GET',
+    data: {
+      page: 1,
+      pageSize: 20
+    }
   }).then(res => {
-    if (res.code === 1 || res.code === 200) {
-      tasks.value = res.data || []
+    if (res.code === 0 || res.code === 1 || res.code === 200) {
+      // Handle both new 'list' format and potential 'records' or direct array
+      const data = res.data;
+      if (Array.isArray(data)) {
+        tasks.value = data;
+      } else if (data && Array.isArray(data.list)) {
+        tasks.value = data.list;
+      } else if (data && Array.isArray(data.records)) {
+        tasks.value = data.records;
+      } else {
+        tasks.value = [];
+      }
     }
   }).catch(err => {
     if (err.statusCode !== 401) {
@@ -128,20 +154,17 @@ onShow(() => {
   margin-right: 20rpx;
 }
 
-.status-badge {
+.badge-group {
+  display: flex;
+  gap: 10rpx;
+}
+
+.urgent-badge {
   font-size: 24rpx;
   padding: 4rpx 16rpx;
   border-radius: 20rpx;
-}
-
-.status-badge.active {
-  background-color: #EBF5FF;
-  color: #3B82F6;
-}
-
-.status-badge.ended {
-  background-color: #F3F4F6;
-  color: #6B7280;
+  background-color: #FEE2E2;
+  color: #EF4444;
 }
 
 .info-row {

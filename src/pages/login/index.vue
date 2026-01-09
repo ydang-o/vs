@@ -5,45 +5,78 @@
       <text class="title">合伙人投票系统</text>
     </view>
     
-    <view class="login-form">
+    <!-- WeChat Login Area -->
+    <view class="login-form" v-if="!showLoginForm">
       <view class="welcome-text">欢迎回来</view>
       <view class="sub-text">请使用微信授权登录</view>
       
       <button 
         class="login-btn" 
         type="primary" 
-        @click="handleLogin"
+        @click="handleWxLogin"
         :loading="loading"
       >
         微信一键登录
       </button>
+      
+      <view class="switch-mode" @click="showLoginForm = true">
+        <text>首次登录 / 账号绑定</text>
+      </view>
+    </view>
 
-      <!-- Phone Number Button (Optional for now, depending on backend logic) -->
-      <!-- <button 
-        class="login-btn phone-btn" 
-        open-type="getPhoneNumber" 
-        @getphonenumber="handlePhoneNumber"
+    <!-- Account Login/Bind Area -->
+    <view class="login-form" v-else>
+      <view class="welcome-text">账号绑定</view>
+      <view class="sub-text">首次登录请验证身份绑定微信</view>
+
+      <view class="input-group">
+        <input 
+          class="input-item" 
+          type="text" 
+          v-model="formData.username" 
+          placeholder="请输入用户名" 
+        />
+        <input 
+          class="input-item" 
+          type="password" 
+          v-model="formData.password" 
+          placeholder="请输入密码" 
+        />
+      </view>
+
+      <button 
+        class="login-btn" 
+        type="primary" 
+        @click="handleAccountBind"
+        :loading="loading"
       >
-        手机号授权登录
-      </button> -->
+        验证并绑定
+      </button>
+      
+      <view class="switch-mode" @click="showLoginForm = false">
+        <text>返回微信登录</text>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import request from '@/utils/request.js'
 
 const loading = ref(false)
+const showLoginForm = ref(false)
+const formData = reactive({
+  username: '',
+  password: ''
+})
 
-// Placeholder for phone number handling if needed later
-// const handlePhoneNumber = (e) => {
-//   if (e.detail.code) {
-//     // Send code to backend to bind phone
-//   }
-// }
-
-const handleLogin = () => {
+// Handle WeChat Login
+const handleWxLogin = () => {
+  // Clear existing token to prevent backend from treating this as a "Bind to current user" request
+  uni.removeStorageSync('token')
+  uni.removeStorageSync('userInfo')
+  
   loading.value = true
   
   uni.login({
@@ -51,77 +84,144 @@ const handleLogin = () => {
     success: (loginRes) => {
       if (loginRes.code) {
         request({
-          url: '/user/user/login',
+          url: '/user/user/wxLogin',
           method: 'POST',
           data: {
             code: loginRes.code
           }
         }).then(res => {
           loading.value = false
-          if (res.code === 1 || res.code === 200) {
-            console.log('Login Response Data:', res.data)
-            const { token, id, openid, ...userInfo } = res.data
-            
-            if (!token) {
-              console.error('Token is missing in response:', res.data)
-              uni.showToast({ title: '登录失败：Token缺失', icon: 'none' })
-              return
-            }
-
-            // Remove role check as it is not in the API response definition
-            // The backend seems to control access purely via token validity/claims
-            
-            uni.setStorageSync('token', token)
-            console.log('Token stored in storage:', uni.getStorageSync('token')) // Verify storage
-            uni.setStorageSync('userInfo', { id, openid, ...userInfo }) // Store all user info fields
-            
-            uni.showToast({
-              title: '登录成功',
-              icon: 'success'
-            })
-            
-            setTimeout(() => {
-              uni.switchTab({
-                url: '/pages/index/index'
-              })
-            }, 1500)
+          if ((res.code === 0 || res.code === 1 || res.code === 200) && res.data) {
+            handleLoginSuccess(res.data)
           } else {
-             // Handle backend error codes explicitly
-             console.error('Login Failed with code:', res.code, res.msg)
-             uni.showToast({
-               title: res.msg || '登录失败',
-               icon: 'none',
-               duration: 3000
-             })
+            // Assume failure means not bound or other error
+            uni.showToast({ title: res.msg || '未绑定账号，请先验证', icon: 'none' })
+            showLoginForm.value = true
           }
         }).catch(err => {
           loading.value = false
-          console.error('Login Request Failed:', err)
-          uni.showToast({
-            title: '登录请求失败: ' + (err.errMsg || JSON.stringify(err)),
-            icon: 'none',
-            duration: 3000
-          })
+          
+          // If 401 (Unauthorized/Not Bound) or 404, switch to form
+          // Note: Some environments might wrap the error differently, so check multiple properties
+          if (err.statusCode === 401 || err.code === 401 || err.statusCode === 404 || err.code === 404) {
+             console.warn('WX Login: User not bound or not found (Expected for new users)', err)
+             uni.showToast({ title: '未找到绑定账号，请先验证', icon: 'none' })
+             showLoginForm.value = true
+          } else {
+             console.error('WX Login Failed:', err)
+             uni.showToast({ title: '登录失败，请重试', icon: 'none' })
+          }
         })
       } else {
         loading.value = false
-        console.error('WeChat Login Code Missing:', loginRes)
-        uni.showToast({
-          title: '微信登录失败: 未获取到code',
-          icon: 'none'
-        })
+        uni.showToast({ title: '获取微信授权码失败', icon: 'none' })
       }
     },
     fail: (err) => {
       loading.value = false
-      console.error('Uni Login Failed:', err)
-      uni.showToast({
-        title: '无法调用微信登录: ' + (err.errMsg || JSON.stringify(err)),
-        icon: 'none',
-        duration: 3000
-      })
+      uni.showToast({ title: '微信登录调用失败', icon: 'none' })
     }
   })
+}
+
+// Handle Account Verification and Binding
+const handleAccountBind = () => {
+  // Clear any existing token to avoid interference
+  uni.removeStorageSync('token')
+
+  if (!formData.username || !formData.password) {
+    uni.showToast({ title: '请输入用户名和密码', icon: 'none' })
+    return
+  }
+
+  loading.value = true
+
+  // 1. Verify Account (Pre-login)
+  request({
+    url: '/user/user/preLogin',
+    method: 'POST',
+    data: {
+      username: formData.username,
+      password: formData.password
+    }
+  }).then(res => {
+    if (res.code === 0 || res.code === 1 || res.code === 200) {
+      const userId = res.data.id
+      
+      // 2. Get fresh code for binding
+      uni.login({
+        provider: 'weixin',
+        success: (loginRes) => {
+          if (loginRes.code) {
+            // 3. Bind with wxLogin
+            request({
+              url: '/user/user/wxLogin',
+              method: 'POST',
+              data: {
+                code: loginRes.code,
+                userId: userId
+              }
+            }).then(bindRes => {
+              loading.value = false
+              if (bindRes.code === 0 || bindRes.code === 1 || bindRes.code === 200) {
+                uni.showToast({ title: '绑定成功', icon: 'success' })
+                handleLoginSuccess(bindRes.data)
+              } else {
+                uni.showToast({ title: bindRes.msg || '绑定失败', icon: 'none' })
+              }
+            }).catch(err => {
+              loading.value = false
+              uni.showToast({ title: err.msg || '绑定请求失败', icon: 'none' })
+            })
+          }
+        },
+        fail: () => {
+           loading.value = false
+           uni.showToast({ title: '微信授权失败', icon: 'none' })
+        }
+      })
+    } else {
+      loading.value = false
+      uni.showToast({ title: res.msg || '账号验证失败', icon: 'none' })
+    }
+  }).catch(err => {
+    loading.value = false
+    // Handle 401 specifically for preLogin
+    if (err.statusCode === 401 || err.code === 401) {
+       console.warn('PreLogin: Verification failed (401)', err)
+       uni.showToast({ title: '用户名或密码错误', icon: 'none' })
+    } else {
+       console.error('PreLogin Error:', err)
+       uni.showToast({ title: err.msg || '验证请求失败', icon: 'none' })
+    }
+  })
+}
+
+const handleLoginSuccess = (data) => {
+  if (!data) {
+    uni.showToast({ title: '登录失败：服务端未返回数据', icon: 'none' })
+    return
+  }
+  const { token, id, openid, ...userInfo } = data
+            
+  if (!token) {
+    uni.showToast({ title: '登录失败：Token缺失', icon: 'none' })
+    return
+  }
+
+  uni.setStorageSync('token', token)
+  uni.setStorageSync('userInfo', { id, openid, ...userInfo })
+  
+  uni.showToast({
+    title: '登录成功',
+    icon: 'success'
+  })
+  
+  setTimeout(() => {
+    uni.switchTab({
+      url: '/pages/index/index'
+    })
+  }, 1500)
 }
 </script>
 
@@ -139,7 +239,7 @@ const handleLogin = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 120rpx;
+  margin-bottom: 80rpx;
 }
 
 .logo {
@@ -171,7 +271,24 @@ const handleLogin = () => {
 .sub-text {
   font-size: 28rpx;
   color: #999;
-  margin-bottom: 80rpx;
+  margin-bottom: 60rpx;
+}
+
+.input-group {
+  width: 100%;
+  margin-bottom: 40rpx;
+}
+
+.input-item {
+  width: 100%;
+  height: 96rpx;
+  background-color: #f5f7fa;
+  border-radius: 48rpx;
+  margin-bottom: 24rpx;
+  padding: 0 40rpx;
+  box-sizing: border-box;
+  font-size: 30rpx;
+  color: #333;
 }
 
 .login-btn {
@@ -182,6 +299,16 @@ const handleLogin = () => {
   border-radius: 44rpx;
   font-size: 32rpx;
   font-weight: 500;
-  margin-bottom: 40rpx;
+  margin-bottom: 30rpx;
+}
+
+.switch-mode {
+  padding: 20rpx;
+}
+
+.switch-mode text {
+  font-size: 28rpx;
+  color: #666;
+  text-decoration: underline;
 }
 </style>

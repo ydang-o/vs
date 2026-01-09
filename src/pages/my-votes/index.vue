@@ -17,15 +17,17 @@
         @click="goToDetail(item.voteTaskId || item.id)"
       >
         <view class="card-header">
-          <text class="task-title">{{ item.title || item.voteTaskTitle }}</text>
-          <text class="status-badge" :class="getStatusClass(item)">
+          <text class="task-title">{{ item.proposalTitle || item.title }}</text>
+          <text class="status-badge" :class="getStatusClass(item)" v-if="currentTab === 1">
             {{ getStatusText(item) }}
           </text>
+          <text class="urgent-badge" v-if="currentTab === 0 && item.urgent">紧急</text>
         </view>
         <view class="card-body">
            <view class="info-row">
-            <text class="label">截止时间：</text>
-            <text class="value">{{ item.endTime }}</text>
+            <text class="label" v-if="currentTab === 0">截止时间：</text>
+            <text class="label" v-else>投票时间：</text>
+            <text class="value">{{ currentTab === 0 ? item.endTime : item.voteTime }}</text>
           </view>
            <view class="info-row" v-if="currentTab === 1">
             <text class="label">我的投票：</text>
@@ -54,6 +56,19 @@ const page = ref(1)
 const loading = ref(false)
 const hasMore = ref(true)
 
+const isUrgent = (timeStr) => {
+  if (!timeStr || timeStr === '进行中') return false
+  try {
+    const target = new Date(timeStr.replace(/-/g, '/')).getTime()
+    if (isNaN(target)) return false
+    const now = Date.now()
+    const diff = target - now
+    return diff > 0 && diff <= 10800000
+  } catch (e) {
+    return false
+  }
+}
+
 const switchTab = (index) => {
   if (currentTab.value === index) return
   currentTab.value = index
@@ -67,7 +82,8 @@ const fetchData = () => {
   if (loading.value || !hasMore.value) return
   
   loading.value = true
-  const url = currentTab.value === 0 ? '/api/vote/my/pending' : '/api/vote/my/voted'
+  const isPending = currentTab.value === 0
+  const url = isPending ? '/user/vote/my/pending' : '/user/vote/my/voted'
   
   request({
     url: url,
@@ -75,33 +91,48 @@ const fetchData = () => {
     data: {
       page: page.value,
       pageSize: 20
+    },
+    header: {
+      'content-type': 'application/x-www-form-urlencoded'
     }
   }).then(res => {
     loading.value = false
-    if (res.code === 1 || res.code === 200) {
-      const records = res.data.records || res.data || []
+    if (res.code === 0 || res.code === 1 || res.code === 200) {
+      let records = [];
+      
+      // Handle different response structures based on "my voted" API docs and typical patterns
+      // API docs say Response data is object, schema is generic. 
+      // Assuming standard pagination structure or direct list.
+      if (res.data && Array.isArray(res.data.records)) {
+         records = res.data.records;
+      } else if (res.data && Array.isArray(res.data.list)) {
+         records = res.data.list;
+      } else if (Array.isArray(res.data)) {
+         records = res.data;
+      }
+      
+      // Check for hasMore
+      if (records.length < 20) {
+        hasMore.value = false
+      }
+      
       if (page.value === 1) {
         list.value = records
       } else {
         list.value = [...list.value, ...records]
       }
       
-      if (records.length < 20) {
-        hasMore.value = false
-      } else {
+      if (hasMore.value) {
         page.value++
       }
+    } else {
+        // Error
+        hasMore.value = false
     }
   }).catch(err => {
     loading.value = false
     console.error(err)
-    if (page.value === 1) {
-        // Mock data for dev if API fails (optional, good for demo)
-        if (currentTab.value === 0) {
-            // Pending mock
-            // list.value = [{ id: 99, title: 'Mock Pending Task', endTime: '2025-01-01', status: 'active' }]
-        }
-    }
+    hasMore.value = false
   })
 }
 
@@ -121,7 +152,7 @@ const getStatusClass = (item) => {
 }
 
 const getStatusText = (item) => {
-  return (item.status === 'active' || item.status === 1) ? '进行中' : '已结束'
+  return '已投票'
 }
 
 const getVoteOptionText = (val) => {
@@ -222,9 +253,12 @@ onShow(() => {
   color: #666;
 }
 
-.status-badge.active {
-  background-color: #DBEAFE;
-  color: #3B82F6;
+.urgent-badge {
+  font-size: 24rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+  background-color: #FEE2E2;
+  color: #EF4444;
 }
 
 .info-row {
@@ -243,6 +277,11 @@ onShow(() => {
 }
 
 .highlight {
+  font-weight: bold;
+}
+
+.text-danger {
+  color: #EF4444 !important;
   font-weight: bold;
 }
 

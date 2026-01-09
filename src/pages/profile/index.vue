@@ -15,8 +15,9 @@
         <text>我的投票记录</text>
         <text class="arrow">></text>
       </view>
-      <view class="menu-item" @click="handleLogout">
-        <text class="logout-text">退出登录</text>
+      <view class="menu-item" @click="goToSettings">
+        <text>系统设置</text>
+        <text class="arrow">></text>
       </view>
     </view>
   </view>
@@ -49,19 +50,9 @@ const goToMyVotes = () => {
   })
 }
 
-const handleLogout = () => {
-  uni.showModal({
-    title: '提示',
-    content: '确定要退出登录吗？',
-    success: (res) => {
-      if (res.confirm) {
-        uni.removeStorageSync('token')
-        uni.removeStorageSync('userInfo')
-        uni.reLaunch({
-          url: '/pages/login/index'
-        })
-      }
-    }
+const goToSettings = () => {
+  uni.navigateTo({
+    url: '/pages/settings/index'
   })
 }
 </script>

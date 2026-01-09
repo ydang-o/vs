@@ -6,6 +6,7 @@
     "build:mp-weixin": "uni build -p mp-weixin"
   },
   "dependencies": {
+    "@babel/runtime": "^7.28.4",
     "@dcloudio/uni-app": "3.0.0-alpha-3080220230511001",
     "@dcloudio/uni-app-plus": "3.0.0-alpha-3080220230511001",
     "@dcloudio/uni-components": "3.0.0-alpha-3080220230511001",

@@ -1,25 +1,38 @@
 <template>
   <view class="container">
-    <view class="detail-card" v-if="task">
+    <view class="detail-card" v-if="task && task.proposal">
       <view class="header">
-        <text class="title">{{ task.title }}</text>
+        <text class="title">{{ task.proposal.title }}</text>
         <view class="meta">
-          <text>截止时间：{{ task.endTime }}</text>
+          <text>截止时间：{{ task.voteTask.endTime }}</text>
         </view>
       </view>
       
       <view class="content">
-        <text class="desc">{{ task.description || '暂无详细描述' }}</text>
+        <text class="desc">{{ task.proposal.content || '暂无详细描述' }}</text>
       </view>
       
-      <view class="vote-area" v-if="task.status === 'active'">
-        <button class="vote-btn agree" @click="handleVote(1)">同意</button>
-        <button class="vote-btn reject" @click="handleVote(2)">反对</button>
-        <button class="vote-btn abstain" @click="handleVote(3)">弃权</button>
-      </view>
-      
-      <view class="result-area" v-else>
-        <text class="result-text">投票已结束</text>
+      <view class="action-area">
+        <view class="vote-area" v-if="task.voteTask.canVote">
+          <view class="section-title">本人投票</view>
+          <view class="btn-group">
+            <button class="vote-btn agree" @click="handleVote(1)">同意</button>
+            <button class="vote-btn reject" @click="handleVote(2)">反对</button>
+            <button class="vote-btn abstain" @click="handleVote(3)">弃权</button>
+          </view>
+          <view class="delegate-create-area">
+             <button class="delegate-create-btn" @click="goToDelegateCreate">委托他人投票</button>
+          </view>
+        </view>
+
+        <view class="delegate-area" v-if="task.voteTask.canDelegateVote">
+           <view class="section-title">委托投票</view>
+           <button class="delegate-btn" @click="handleDelegateVote">处理委托投票</button>
+        </view>
+        
+        <view class="result-area" v-if="task.voteTask.hasVoted && !task.voteTask.canVote">
+          <text class="result-text">您已完成投票</text>
+        </view>
       </view>
     </view>
   </view>
@@ -32,6 +45,19 @@ import request from '@/utils/request.js'
 
 const task = ref(null)
 const taskId = ref(null)
+
+const isUrgent = (timeStr) => {
+  if (!timeStr || timeStr === '进行中') return false
+  try {
+    const target = new Date(timeStr.replace(/-/g, '/')).getTime()
+    if (isNaN(target)) return false
+    const now = Date.now()
+    const diff = target - now
+    return diff > 0 && diff <= 10800000
+  } catch (e) {
+    return false
+  }
+}
 
 onLoad((options) => {
   if (options.id) {
@@ -48,32 +74,154 @@ const fetchDetail = (id) => {
   }
 
   request({
-    url: `/api/vote/task/detail/${id}`,
+    url: `/user/h5/vote/task/detail/${id}`,
     method: 'GET'
   }).then(res => {
-    if (res.code === 1 || res.code === 200) {
-      task.value = res.data
+    console.log('Fetching detail from H5 endpoint:', `/user/h5/vote/task/detail/${id}`)
+    if (res.code === 0 || res.code === 1 || res.code === 200) {
+      const payload = res.data || {}
+      // Map new API response to existing template structure
+      // API structure: { proposal: {...}, voteTask: {...} } or { Proposal: {...}, ... }
+      // Handling case sensitivity
+      const proposalData = payload.proposal || payload.Proposal
+      const voteTaskData = payload.voteTask || payload.VoteTask
+
+      task.value = {
+        proposal: {
+          title: proposalData ? proposalData.title : '',
+          content: proposalData ? (proposalData.content || '暂无详细描述') : '暂无详细描述'
+        },
+        voteTask: {
+          voteTaskId: voteTaskData ? voteTaskData.voteTaskId : id,
+          endTime: voteTaskData ? (voteTaskData.endTime || '进行中') : '进行中',
+          // Relaxed status check: allow if status is 1 or undefined (backward compatibility)
+          canVote: voteTaskData ? ((voteTaskData.status === 1 || voteTaskData.status === undefined) && !voteTaskData.hasVoted) : false,
+          canDelegateVote: voteTaskData ? voteTaskData.canDelegateVote : false,
+          hasVoted: voteTaskData ? voteTaskData.hasVoted : false
+        }
+      }
     }
   }).catch(err => {
+    // Force HBuilderX re-compile
     if (err.statusCode !== 401) {
       console.error(err)
     }
-    // Mock
+    // Mock for error case or dev
     task.value = {
-      id: id,
-      title: '关于扩大合伙人规模的议案',
-      description: '为了适应公司快速发展的需求，提议引入新的战略合伙人...',
-      endTime: '2023-12-31',
-      status: 'active'
+      proposal: {
+        title: '关于扩大合伙人规模的议案',
+        content: '为了适应公司快速发展的需求，提议引入新的战略合伙人...'
+      },
+      voteTask: {
+        voteTaskId: id,
+        endTime: '2023-12-31',
+        canVote: true,
+        canDelegateVote: true,
+        hasVoted: false
+      }
     }
   })
 }
 
-const handleVote = (option) => {
-  uni.showLoading({ title: '提交中' })
+const getVoteText = (option) => {
+  const map = {
+    1: '同意',
+    2: '反对',
+    3: '弃权'
+  }
+  return map[option] || '未知'
+}
+
+const handleDelegateVote = () => {
+  uni.showLoading({ title: '加载委托信息' })
+  const userInfo = uni.getStorageSync('userInfo')
   
   request({
-    url: '/api/vote/submit',
+    url: '/user/vote/task/delegate/list',
+    method: 'GET',
+    data: {
+        voteTaskId: taskId.value,
+        toPartnerId: userInfo.id,
+        status: 1,
+        page: 1,
+        pageSize: 100
+    }
+  }).then(res => {
+      uni.hideLoading()
+      if (res.code === 0 || res.code === 1 || res.code === 200) {
+         let delegates = [];
+         if (Array.isArray(res.data)) {
+             delegates = res.data;
+         } else if (res.data && Array.isArray(res.data.list)) {
+             delegates = res.data.list;
+         } else if (res.data && Array.isArray(res.data.records)) {
+             delegates = res.data.records;
+         }
+
+         if (delegates.length > 0) {
+            showDelegateAction(delegates)
+         } else {
+            uni.showToast({ title: '暂无待处理委托', icon: 'none' })
+         }
+      } else {
+         uni.showToast({ title: '暂无待处理委托', icon: 'none' })
+      }
+  }).catch(err => {
+      uni.hideLoading()
+      console.error(err)
+  })
+}
+
+const showDelegateAction = (delegates) => {
+  // Map delegates to readable strings. Assuming 'fromPartnerName' exists in response or need to be derived
+  const itemList = delegates.map(d => `代理 ${d.fromPartnerName || d.fromPartnerId} 投票`)
+  uni.showActionSheet({
+    itemList: itemList,
+    success: (res) => {
+      const selectedDelegate = delegates[res.tapIndex]
+      showVoteOptions(selectedDelegate)
+    }
+  })
+}
+
+const showVoteOptions = (delegate) => {
+    uni.showActionSheet({
+        itemList: ['同意', '反对', '弃权'],
+        success: (res) => {
+            const option = res.tapIndex + 1
+            submitDelegateVote(delegate.fromPartnerId, option)
+        }
+    })
+}
+
+const submitDelegateVote = (fromPartnerId, option) => {
+    uni.showLoading({ title: '提交委托中' })
+    // Note: User did not provide new proxy submit endpoint, keeping original logic
+    request({
+      url: '/user/h5/vote/delegate/submit',
+      method: 'POST',
+      data: {
+        voteTaskId: taskId.value,
+        voteOption: option,
+        fromPartnerId: fromPartnerId
+      }
+    }).then(res => {
+      uni.hideLoading()
+      if (res.code === 0 || res.code === 1 || res.code === 200) {
+         uni.showToast({ title: '委托投票成功' })
+         fetchDetail(taskId.value)
+      } else {
+         uni.showToast({ title: res.msg || '操作失败', icon: 'none' })
+      }
+    }).catch(() => {
+      uni.hideLoading()
+    })
+}
+
+const handleVote = (option) => {
+  uni.showLoading({ title: '提交中' })
+  request({
+    url: '/user/vote/submit',
     method: 'POST',
     data: {
       voteTaskId: taskId.value,
@@ -81,16 +229,32 @@ const handleVote = (option) => {
     }
   }).then(res => {
     uni.hideLoading()
-    if (res.code === 1 || res.code === 200) {
+    if (res.code === 0 || res.code === 1 || res.code === 200) {
       uni.showToast({ title: '投票成功' })
       setTimeout(() => {
-        uni.navigateBack()
+        fetchDetail(taskId.value)
       }, 1500)
     } else {
       uni.showToast({ title: res.msg || '投票失败', icon: 'none' })
     }
   }).catch(() => {
     uni.hideLoading()
+  })
+}
+
+const checkIsUrgent = (target) => {
+  try {
+    const now = Date.now()
+    const diff = target - now
+    return diff > 0 && diff <= 10800000
+  } catch (e) {
+    return false
+  }
+}
+
+const goToDelegateCreate = () => {
+  uni.navigateTo({
+    url: `/pages/delegate-create/index?taskId=${taskId.value}`
   })
 }
 </script>
@@ -133,15 +297,52 @@ const handleVote = (option) => {
   line-height: 1.6;
 }
 
-.vote-area {
+.action-area {
+  margin-top: 40rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+  color: #333;
+}
+
+.btn-group {
   display: flex;
   justify-content: space-around;
-  margin-top: 40rpx;
 }
 
 .vote-btn {
   width: 180rpx;
   font-size: 28rpx;
+}
+
+.delegate-create-area {
+  margin-top: 20rpx;
+}
+
+.delegate-create-btn {
+  background-color: #fff;
+  color: #3B82F6;
+  font-size: 28rpx;
+  border: 1px solid #3B82F6;
+  width: 100%;
+}
+
+.delegate-btn {
+  background-color: #3B82F6;
+  color: white;
+  font-size: 28rpx;
+  width: 100%;
+}
+
+.text-danger {
+  color: #EF4444 !important;
+  font-weight: bold;
 }
 
 .agree {
