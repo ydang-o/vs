@@ -44,10 +44,21 @@ const isUrgent = (timeStr) => {
   if (!timeStr || timeStr === '进行中') return false
   try {
     // Replace - with / for iOS compatibility
-    const target = new Date(timeStr.replace(/-/g, '/')).getTime()
-    if (isNaN(target)) return false
+    const formattedTime = timeStr.replace(/-/g, '/')
+    const target = new Date(formattedTime).getTime()
     const now = Date.now()
     const diff = target - now
+    
+    console.log('Time Debug:', {
+      original: timeStr,
+      formatted: formattedTime,
+      targetTime: target,
+      nowTime: now,
+      diff: diff,
+      isUrgent: diff > 0 && diff <= 10800000
+    })
+
+    if (isNaN(target)) return false
     // Less than 3 hours (10800000ms) and not expired
     return diff > 0 && diff <= 10800000
   } catch (e) {
@@ -180,6 +191,11 @@ onShow(() => {
 
 .value {
   color: #374151;
+}
+
+.text-danger {
+  color: #EF4444 !important;
+  font-weight: bold;
 }
 
 .empty-tip {
