@@ -2,22 +2,16 @@
   <view class="container">
     <view class="success-icon-area">
       <icon type="success" size="80" color="#10B981" />
-      <text class="success-text">投票成功</text>
-      <text class="sub-text">您的投票已成功提交</text>
+      <text class="success-text">投票完成</text>
     </view>
     
     <view class="btn-area">
-      <button class="primary-btn" @click="goBack">返回上一页</button>
-      <button class="secondary-btn" @click="goHome">返回首页</button>
+      <button class="primary-btn" @click="goHome">返回首页</button>
     </view>
   </view>
 </template>
 
 <script setup>
-const goBack = () => {
-  uni.navigateBack()
-}
-
 const goHome = () => {
   uni.switchTab({
     url: '/pages/index/index'
