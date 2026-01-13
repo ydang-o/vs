@@ -63,7 +63,7 @@ const fetchPartners = () => {
     url: '/user/partner/list',
     method: 'GET',
     data: {
-      // name: '' // Optional filter
+      status: 1 // Only active partners
     }
   }).then(res => {
     if (res.code === 0 || res.code === 1 || res.code === 200) {
@@ -80,7 +80,7 @@ const fetchPartners = () => {
         id: p.id,
         name: p.name,
         avatar: p.avatar
-      }))
+      })).filter(p => p.id !== uni.getStorageSync('userInfo').id)
     }
   }).catch(err => {
     console.error('Fetch partners failed', err)
@@ -107,9 +107,8 @@ const uploadFile = (filePath) => {
   uni.showLoading({ title: '上传中...' })
   const token = uni.getStorageSync('token')
   
-  // Speculative upload endpoint
   uni.uploadFile({
-    url: 'http://119.29.249.72:8080/common/upload', 
+    url: 'http://119.29.249.72:8080/user/file/upload', 
     filePath: filePath,
     name: 'file',
     header: {
@@ -117,19 +116,44 @@ const uploadFile = (filePath) => {
     },
     success: (uploadRes) => {
       uni.hideLoading()
+      console.log('Upload raw response:', uploadRes.data)
       try {
-        const data = JSON.parse(uploadRes.data)
-        if (data.code === 0 || data.code === 200) {
-          // Assuming data.url or data.data is the path
-          uploadedPath.value = data.url || data.data || data.msg
-          uni.showToast({ title: '上传成功' })
+        const res = JSON.parse(uploadRes.data)
+        if (res.code === 0 || res.code === 1 || res.code === 200) {
+          // Handle Map<String, String> response
+          let path = ''
+          const data = res.data
+          
+          if (typeof data === 'string') {
+            path = data
+          } else if (data && typeof data === 'object') {
+             // Try common keys first
+             if (data.path) path = data.path
+             else if (data.url) path = data.url
+             else if (data.filePath) path = data.filePath
+             else if (data.file) path = data.file
+             else {
+               // Take the first string value found
+               const values = Object.values(data)
+               if (values.length > 0 && typeof values[0] === 'string') {
+                 path = values[0]
+               }
+             }
+          }
+          
+          if (path) {
+            uploadedPath.value = path
+            uni.showToast({ title: '上传成功' })
+          } else {
+             uploadedPath.value = ''
+             console.error('Path extraction failed:', res)
+             uni.showToast({ title: '无法获取文件路径', icon: 'none' })
+          }
         } else {
-          uni.showToast({ title: '上传失败: ' + (data.msg || '未知错误'), icon: 'none' })
+          uni.showToast({ title: '上传失败: ' + (res.msg || '未知错误'), icon: 'none' })
         }
       } catch (e) {
         console.error('Parse upload response failed', e)
-        // Fallback: maybe the response IS the path?
-        // uploadedPath.value = uploadRes.data
         uni.showToast({ title: '上传响应解析失败', icon: 'none' })
       }
     },
@@ -160,8 +184,8 @@ const handleSubmit = () => {
     method: 'POST',
     data: {
       voteTaskId: Number(voteTaskId.value),
-      toPartnerId: selectedPartner.id,
-      fromPartnerId: userInfo.id, 
+      toPartnerId: Number(selectedPartner.id),
+      fromPartnerId: Number(userInfo.id), 
       proofFile: uploadedPath.value
     }
   }).then(res => {

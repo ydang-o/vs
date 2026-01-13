@@ -23,9 +23,36 @@
           </view>
         </view>
         <view class="card-body">
-          <view class="info-row">
+          <view class="info-row" v-if="item.endTime">
             <text class="label">截止时间：</text>
             <text class="value" :class="{ 'text-danger': isUrgent(item.endTime) }">{{ item.endTime }}</text>
+          </view>
+          <view class="info-row" v-else-if="item.publishTime">
+            <text class="label">发布时间：</text>
+            <text class="value">{{ item.publishTime }}</text>
+          </view>
+          <view class="info-row" v-if="item.totalCount">
+             <text class="label">投票进度：</text>
+             <text class="value">{{ item.votedCount || 0 }}/{{ item.totalCount }} 人</text>
+          </view>
+          
+          <view class="stats-bar" v-if="item.totalCount">
+            <view class="sb-item">
+              <text class="sb-label text-green">同意</text>
+              <text class="sb-val">{{ item.agreeCount || 0 }}</text>
+            </view>
+            <view class="sb-item">
+              <text class="sb-label text-red">反对</text>
+              <text class="sb-val">{{ item.opposeCount || item.rejectCount || 0 }}</text>
+            </view>
+            <view class="sb-item">
+              <text class="sb-label text-gray">弃权</text>
+              <text class="sb-val">{{ item.abstainCount || item.waiverCount || 0 }}</text>
+            </view>
+            <view class="sb-item">
+              <text class="sb-label">未投</text>
+              <text class="sb-val">{{ (item.totalCount || 0) - (item.votedCount || 0) }}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -61,37 +88,64 @@ const fetchTasks = () => {
     uni.reLaunch({ url: '/pages/login/index' })
     return
   }
+  
+  const userInfo = uni.getStorageSync('userInfo')
+  const isAdmin = userInfo && userInfo.username === 'admin'
+  
+  if (isAdmin) {
+    // uni.hideTabBar() // User requested to keep tab bar
+  } else {
+    uni.showTabBar()
+  }
+
+  const url = isAdmin ? '/user/h5/proposal/list' : '/user/vote/my/pending'
+  const dataParams = isAdmin ? { pageNum: 1, pageSize: 20 } : { page: 1, pageSize: 20 }
 
   request({
-    url: '/user/vote/my/pending',
+    url: url,
     method: 'GET',
-    data: {
-      page: 1,
-      pageSize: 20
-    }
+    data: dataParams
   }).then(res => {
     if (res.code === 0 || res.code === 1 || res.code === 200) {
       // Handle both new 'list' format and potential 'records' or direct array
+      let listData = []
       const data = res.data;
+      
       if (Array.isArray(data)) {
-        tasks.value = data;
-      } else if (data && Array.isArray(data.list)) {
-        tasks.value = data.list;
+        listData = data;
       } else if (data && Array.isArray(data.records)) {
-        tasks.value = data.records;
-      } else {
-        tasks.value = [];
+        listData = data.records;
+      } else if (data && Array.isArray(data.list)) {
+        listData = data.list;
       }
       
-      // Sort by endTime descending (Latest deadline first) as requested
-      if (tasks.value.length > 0) {
-        tasks.value.sort((a, b) => {
-          const timeA = new Date(a.endTime.replace(/-/g, '/')).getTime() || 0
-          const timeB = new Date(b.endTime.replace(/-/g, '/')).getTime() || 0
-          return timeB - timeA
-        })
+      // Map admin list to view model if needed
+      if (isAdmin) {
+          tasks.value = listData.map(item => {
+              // Assuming admin list structure might be slightly different or same
+              // Need to ensure fields match what template expects: 
+              // id/voteTaskId, title/proposalTitle, endTime, votedCount, totalCount, stats...
+              return {
+                  ...item,
+                  voteTaskId: item.voteTaskId || item.id,
+                  proposalTitle: item.title, // Admin list likely has 'title'
+                  // If admin list doesn't have stats directly, they might be missing or under a different key
+                  // Using safe fallbacks
+                  agreeCount: item.agreeCount || 0,
+                  opposeCount: item.opposeCount || item.rejectCount || 0,
+                  abstainCount: item.abstainCount || item.waiverCount || 0,
+                  votedCount: item.votedCount || 0,
+                  totalCount: item.totalCount || item.partnerCount || 0
+              }
+          })
+      } else {
+          tasks.value = listData
       }
+      
+    } else {
+      uni.showToast({ title: res.msg || '获取任务失败', icon: 'none' })
     }
+    uni.stopPullDownRefresh()
   }).catch(err => {
     if (err.statusCode !== 401) {
       console.error(err)
@@ -195,6 +249,35 @@ onShow(() => {
   color: #EF4444 !important;
   font-weight: bold;
 }
+
+.stats-bar {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1px dashed #E5E7EB;
+}
+
+.sb-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 24rpx;
+}
+
+.sb-label {
+  margin-bottom: 4rpx;
+  color: #6B7280;
+}
+
+.sb-val {
+  font-weight: bold;
+  color: #374151;
+}
+
+.text-green { color: #10B981; }
+.text-red { color: #EF4444; }
+.text-gray { color: #9CA3AF; }
 
 .empty-tip {
   text-align: center;

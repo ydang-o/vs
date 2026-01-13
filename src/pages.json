@@ -22,7 +22,8 @@
 		{
 			"path": "pages/task-detail/index",
 			"style": {
-				"navigationBarTitleText": "任务详情"
+				"navigationBarTitleText": "任务详情",
+				"enablePullDownRefresh": true
 			}
 		},
 		{

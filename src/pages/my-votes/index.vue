@@ -31,8 +31,8 @@
           </view>
            <view class="info-row" v-if="currentTab === 1">
             <text class="label">我的投票：</text>
-            <text class="value highlight" :class="getVoteColorClass(item.voteOption)">
-              {{ getVoteOptionText(item.voteOption) }}
+            <text class="value highlight" :class="getVoteColorClass(item.myVoteOption)">
+              {{ getVoteOptionText(item.myVoteOption) }}
             </text>
           </view>
         </view>

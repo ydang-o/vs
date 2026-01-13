@@ -33,6 +33,10 @@ onShow(() => {
   const info = uni.getStorageSync('userInfo')
   if (info) {
     userInfo.value = info
+    // If admin, redirect to home as they shouldn't see this page - DISABLED per user request
+    // if (info.username === 'admin') {
+    //   uni.switchTab({ url: '/pages/index/index' })
+    // }
   }
 })
 

@@ -64,6 +64,10 @@ const handleSubmit = () => {
     uni.showToast({ title: '两次输入的密码不一致', icon: 'none' })
     return
   }
+  if (formData.oldPassword === formData.newPassword) {
+    uni.showToast({ title: '新密码不能与旧密码相同', icon: 'none' })
+    return
+  }
 
   loading.value = true
   
@@ -77,7 +81,8 @@ const handleSubmit = () => {
     }
   }).then(res => {
     loading.value = false
-    if (res.code === 0 || res.code === 1 || res.code === 200) {
+    // Handle backend bug where code 0 is returned for password error
+    if ((res.code === 0 || res.code === 1 || res.code === 200) && res.msg !== '密码错误') {
       uni.showToast({ title: '修改成功，请重新登录', icon: 'none' })
       setTimeout(() => {
         // Clear token and redirect to login
