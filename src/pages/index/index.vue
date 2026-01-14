@@ -16,7 +16,15 @@
         @click="goToDetail(item.voteTaskId || item.id)"
       >
         <view class="card-header">
-          <text class="task-title">{{ item.proposalTitle || item.title }}</text>
+          <view class="title-wrapper">
+            <text class="task-title">{{ item.proposalTitle || item.title }}</text>
+            <text class="delegate-hint text-orange" v-if="item.delegateeName">
+              (您已委托 {{ item.delegateeName }} 投票)
+            </text>
+            <text class="delegate-hint text-blue" v-if="item.delegatorName">
+              ({{ item.delegatorName }} 委托您投票)
+            </text>
+          </view>
           <view class="badge-group">
             <text class="urgent-badge" v-if="item.urgent">紧急</text>
             <!-- Pending list always contains active/todo tasks per definition -->
@@ -62,7 +70,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
 
 const tasks = ref([])
@@ -165,6 +173,10 @@ const goToDetail = (id) => {
 }
 
 onShow(() => {
+  fetchTasks()
+})
+
+onPullDownRefresh(() => {
   fetchTasks()
 })
 </script>
@@ -278,6 +290,21 @@ onShow(() => {
 .text-green { color: #10B981; }
 .text-red { color: #EF4444; }
 .text-gray { color: #9CA3AF; }
+.text-orange { color: #F59E0B; }
+.text-blue { color: #3B82F6; }
+
+.title-wrapper {
+  flex: 1;
+  margin-right: 20rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.delegate-hint {
+  font-size: 24rpx;
+  margin-top: 8rpx;
+  font-weight: normal;
+}
 
 .empty-tip {
   text-align: center;

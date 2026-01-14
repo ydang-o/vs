@@ -12,6 +12,14 @@
 </template>
 
 <script setup>
+import { onPullDownRefresh } from '@dcloudio/uni-app'
+
+onPullDownRefresh(() => {
+  setTimeout(() => {
+    uni.stopPullDownRefresh()
+  }, 500)
+})
+
 const goHome = () => {
   uni.switchTab({
     url: '/pages/index/index'

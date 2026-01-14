@@ -41,9 +41,8 @@
 
 <script setup>
 import { ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
-import request from '@/utils/request.js'
-
+import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
+import request, { BASE_URL } from '@/utils/request.js'
 const voteTaskId = ref(null)
 const partnerList = ref([])
 const partnerIndex = ref(-1)
@@ -77,14 +76,16 @@ const fetchPartners = () => {
       }
       
       partnerList.value = list.map(p => ({
-        id: p.id,
-        name: p.name,
+        id: p.id || p.userId || p.partnerId,
+        name: p.name || p.realName || p.username || p.nickName,
         avatar: p.avatar
-      })).filter(p => p.id !== uni.getStorageSync('userInfo').id)
+      })).filter(p => p.id && p.id !== uni.getStorageSync('userInfo').id)
     }
+    uni.stopPullDownRefresh()
   }).catch(err => {
     console.error('Fetch partners failed', err)
     uni.showToast({ title: '获取合伙人列表失败', icon: 'none' })
+    uni.stopPullDownRefresh()
   })
 }
 
@@ -177,6 +178,10 @@ const handleSubmit = () => {
 
   submitting.value = true
   const selectedPartner = partnerList.value[partnerIndex.value]
+  if (!selectedPartner || !selectedPartner.id) {
+    uni.showToast({ title: '所选合伙人信息无效', icon: 'none' })
+    return
+  }
   const userInfo = uni.getStorageSync('userInfo')
 
   request({
@@ -185,12 +190,16 @@ const handleSubmit = () => {
     data: {
       voteTaskId: Number(voteTaskId.value),
       toPartnerId: Number(selectedPartner.id),
-      fromPartnerId: Number(userInfo.id), 
+      // fromPartnerId: Number(userInfo.id), // Auto-acquired on backend
       proofFile: uploadedPath.value
     }
   }).then(res => {
     submitting.value = false
-    if (res.code === 0 || res.code === 1 || res.code === 200) {
+    // Relaxed check: 
+    // code=1: Success (even if data is null)
+    // code=200: Success
+    // code=0: Success ONLY if data exists (to filter out business errors with code=0 like "Cannot delegate to self")
+    if (res.code === 1 || res.code === 200 || (res.code === 0 && res.data)) {
       uni.showToast({ title: '委托提交成功' })
       setTimeout(() => {
         uni.navigateBack()

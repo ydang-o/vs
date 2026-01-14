@@ -30,15 +30,22 @@ import { onShow } from '@dcloudio/uni-app'
 const userInfo = ref({})
 
 onShow(() => {
+  loadUserInfo()
+})
+
+onPullDownRefresh(() => {
+  loadUserInfo()
+  setTimeout(() => {
+    uni.stopPullDownRefresh()
+  }, 500)
+})
+
+const loadUserInfo = () => {
   const info = uni.getStorageSync('userInfo')
   if (info) {
     userInfo.value = info
-    // If admin, redirect to home as they shouldn't see this page - DISABLED per user request
-    // if (info.username === 'admin') {
-    //   uni.switchTab({ url: '/pages/index/index' })
-    // }
   }
-})
+}
 
 const getRoleName = (role) => {
   const map = {

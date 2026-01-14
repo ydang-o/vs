@@ -3,6 +3,12 @@
     <view class="detail-card" v-if="task && task.proposal">
       <view class="header">
         <text class="title">{{ task.proposal.title }}</text>
+        <text class="delegate-hint text-orange" v-if="task.voteTask && task.voteTask.delegateeName">
+          (您已委托 {{ task.voteTask.delegateeName }} 投票)
+        </text>
+        <text class="delegate-hint text-blue" v-if="task.voteTask && task.voteTask.delegatorName">
+          ({{ task.voteTask.delegatorName }} 委托您投票)
+        </text>
         <view class="meta">
           <text>截止时间：{{ task.voteTask.endTime }}</text>
         </view>
@@ -61,10 +67,10 @@
           </view>
         </view>
 
-        <view class="delegate-area" v-if="task.voteTask.canDelegateVote && !isExpired">
+        <!-- <view class="delegate-area" v-if="task.voteTask.canDelegateVote && !isExpired">
            <view class="section-title">委托投票</view>
            <button class="delegate-btn" @click="handleDelegateVote">处理委托投票</button>
-        </view>
+        </view> -->
         
         <view class="result-area" v-if="task.voteTask.hasVoted || isExpired">
           <text class="result-text" v-if="task.voteTask.hasVoted">您已完成投票</text>
@@ -270,7 +276,11 @@ const fetchDetail = (id) => {
               hasVoted: voteTaskData ? voteTaskData.hasVoted : (payload.hasVoted),
               votedCount: voteTaskData ? (voteTaskData.votedCount || 0) : 0,
               totalCount: voteTaskData ? (voteTaskData.totalCount || 0) : 0,
-              voterList: voteTaskData ? (voteTaskData.voterList || []) : []
+              voterList: voteTaskData ? (voteTaskData.voterList || []) : [],
+              delegateeName: voteTaskData ? voteTaskData.delegateeName : payload.delegateeName,
+              delegatorName: voteTaskData ? voteTaskData.delegatorName : payload.delegatorName,
+              isProxy: (voteTaskData && voteTaskData.isProxy !== undefined) ? voteTaskData.isProxy : (payload.isProxy || 0),
+              fromPartnerId: (voteTaskData && voteTaskData.fromPartnerId) ? voteTaskData.fromPartnerId : (payload.fromPartnerId || payload.delegatorPartnerId)
             }
           }
       }
@@ -479,7 +489,11 @@ const submitVote = (option) => {
     }
   }).then(res => {
     uni.hideLoading()
-    if (res.code === 0 || res.code === 1 || res.code === 200) {
+    // Relaxed check logic aligned with delegate-create:
+    // code=1: Success (even if data is null)
+    // code=200: Success
+    // code=0: Success ONLY if data exists (to filter out business errors with code=0 like "Already delegated")
+    if (res.code === 1 || res.code === 200 || (res.code === 0 && res.data)) {
       uni.navigateTo({
         url: '/pages/vote-success/index'
       })
@@ -752,4 +766,12 @@ const viewResult = () => {
 .text-green { color: #10B981; }
 .text-red { color: #EF4444; }
 .text-gray { color: #9CA3AF; }
+.text-orange { color: #F59E0B; }
+.text-blue { color: #3B82F6; }
+.delegate-hint {
+  font-size: 26rpx;
+  margin-bottom: 10rpx;
+  display: block;
+  font-weight: 500;
+}
 </style>

@@ -62,7 +62,16 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { onPullDownRefresh } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
+
+onPullDownRefresh(() => {
+  // If showing login form, maybe clear fields? Or just stop refresh.
+  // For now just stop refresh to allow user to see spinner and know it's "refreshed" (even if nothing happens)
+  setTimeout(() => {
+    uni.stopPullDownRefresh()
+  }, 500)
+})
 
 const loading = ref(false)
 const showLoginForm = ref(false)

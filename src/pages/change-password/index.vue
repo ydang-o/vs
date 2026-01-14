@@ -38,7 +38,14 @@
 
 <script setup>
 import { reactive, ref } from 'vue'
+import { onPullDownRefresh } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
+
+onPullDownRefresh(() => {
+  setTimeout(() => {
+    uni.stopPullDownRefresh()
+  }, 500)
+})
 
 const loading = ref(false)
 const formData = reactive({

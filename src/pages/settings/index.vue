@@ -16,6 +16,13 @@
 
 <script setup>
 import { ref } from 'vue'
+import { onPullDownRefresh } from '@dcloudio/uni-app'
+
+onPullDownRefresh(() => {
+  setTimeout(() => {
+    uni.stopPullDownRefresh()
+  }, 500)
+})
 
 const goToChangePassword = () => {
   uni.navigateTo({
