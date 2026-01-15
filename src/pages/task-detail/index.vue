@@ -54,26 +54,41 @@
         </view>
       </view>
       
-      <view class="action-area">
+      <!-- Self Vote Area -->
         <view class="vote-area" v-if="task.voteTask.canVote && !isExpired">
           <view class="section-title">本人投票</view>
           <view class="btn-group">
-            <button class="vote-btn agree" @click="handleVote(1)">同意</button>
-            <button class="vote-btn reject" @click="handleVote(2)">反对</button>
-            <button class="vote-btn abstain" @click="handleVote(3)">弃权</button>
+            <button class="vote-btn agree" @click="handleVote(1, 'self')">同意</button>
+            <button class="vote-btn reject" @click="handleVote(2, 'self')">反对</button>
+            <button class="vote-btn abstain" @click="handleVote(3, 'self')">弃权</button>
           </view>
           <view class="delegate-create-area">
              <button class="delegate-create-btn" @click="goToDelegateCreate">委托他人投票</button>
           </view>
         </view>
 
+        <!-- Delegate Vote Area(s) -->
+        <view class="vote-area delegate-vote-area" v-for="(delegate, index) in delegateList" :key="index">
+          <view class="section-title">代 {{ delegate.fromPartnerName }} 投票</view>
+          
+          <view class="btn-group" v-if="delegate.hasVoted !== 1">
+            <button class="vote-btn agree" @click="handleVote(1, 'delegate', delegate)">同意</button>
+            <button class="vote-btn reject" @click="handleVote(2, 'delegate', delegate)">反对</button>
+            <button class="vote-btn abstain" @click="handleVote(3, 'delegate', delegate)">弃权</button>
+          </view>
+          <view class="result-text" v-else>
+            <text>已完成代投</text>
+          </view>
+        </view>
+
+        <!-- Old Delegate Area (Hidden) -->
         <!-- <view class="delegate-area" v-if="task.voteTask.canDelegateVote && !isExpired">
            <view class="section-title">委托投票</view>
            <button class="delegate-btn" @click="handleDelegateVote">处理委托投票</button>
         </view> -->
         
-        <view class="result-area" v-if="task.voteTask.hasVoted || isExpired">
-          <text class="result-text" v-if="task.voteTask.hasVoted">您已完成投票</text>
+        <view class="result-area" v-if="(task.voteTask.hasVoted || isExpired) && !task.voteTask.hasPendingDelegatedVote">
+          <text class="result-text" v-if="task.voteTask.hasVoted">您已完成本人投票</text>
           <text class="result-text" v-else-if="isExpired">投票已截止</text>
           <button class="view-result-btn" @click="viewResult">查看结果</button>
         </view>
@@ -94,7 +109,6 @@
             </view>
           </view>
         </view>
-      </view>
     </view>
   </view>
 </template>
@@ -107,6 +121,7 @@ import request from '@/utils/request.js'
 const task = ref(null)
 const taskId = ref(null)
 const isAdmin = ref(false)
+const delegateList = ref([])
 
 const statistics = computed(() => {
   if (!task.value || !task.value.voteTask) return null
@@ -165,6 +180,49 @@ const isUrgent = (timeStr) => {
   }
 }
 
+const fetchDelegateInfo = (id) => {
+  request({
+    url: `/user/h5/vote/delegate/detail/${id}`,
+    method: 'GET'
+  }).then(res => {
+    console.log('Delegate info response:', res)
+    if (res.code === 0 || res.code === 1 || res.code === 200) {
+       const data = res.data
+       if (!data) {
+         delegateList.value = []
+         return
+       }
+       
+       let list = []
+       if (Array.isArray(data)) {
+          list = data
+       } else if (data.list && Array.isArray(data.list)) {
+          list = data.list
+       } else if (data.records && Array.isArray(data.records)) {
+          list = data.records
+       } else if (typeof data === 'object' && (data.id || data.toPartnerId)) {
+          // Single object fallback
+          list = [data]
+       }
+       
+       const userInfo = uni.getStorageSync('userInfo')
+       // Try partnerId first, then id
+       const currentUserId = userInfo.partnerId || userInfo.id
+       
+       console.log('Current User ID:', currentUserId)
+       console.log('Raw Delegate List:', list)
+
+       // Relaxed filtering: trust the API to return relevant delegations. 
+       // Filter only by status (1=Active) and ensure fromPartnerId exists.
+       // Previously filtered by toPartnerId == currentUserId, but this caused issues with ID mismatches (e.g. userId vs partnerId).
+       delegateList.value = list.filter(d => d.status === 1 && d.fromPartnerId)
+       console.log('Filtered Delegate List:', delegateList.value)
+    }
+  }).catch(err => {
+     console.error('Fetch delegate info failed', err)
+  })
+}
+
 onLoad((options) => {
   if (options.id) {
     taskId.value = options.id
@@ -202,6 +260,9 @@ const fetchDetail = (id) => {
   }).then(res => {
     uni.stopPullDownRefresh()
     console.log(`Fetching detail from endpoint:`, url)
+    
+    // Fetch delegate info separately
+    fetchDelegateInfo(id)
     
     if (res.code === 0 || res.code === 1 || res.code === 200) {
       const payload = res.data || {}
@@ -253,7 +314,12 @@ const fetchDetail = (id) => {
                   rejectCount: stats.rejectCount || 0,
                   abstainCount: stats.abstainCount || 0,
                   votedCount: stats.votedCount || 0,
-                  totalCount: stats.partnerCount || 0
+                  totalCount: stats.partnerCount || 0,
+                  // Delegate info not in flat structure, handled by fetchDelegateInfo
+                  delegateeName: null,
+                  delegatorName: null,
+                  // New field for pending delegated votes
+                  hasPendingDelegatedVote: payload.hasPendingDelegatedVote || false
               }
           }
       } else {
@@ -279,8 +345,7 @@ const fetchDetail = (id) => {
               voterList: voteTaskData ? (voteTaskData.voterList || []) : [],
               delegateeName: voteTaskData ? voteTaskData.delegateeName : payload.delegateeName,
               delegatorName: voteTaskData ? voteTaskData.delegatorName : payload.delegatorName,
-              isProxy: (voteTaskData && voteTaskData.isProxy !== undefined) ? voteTaskData.isProxy : (payload.isProxy || 0),
-              fromPartnerId: (voteTaskData && voteTaskData.fromPartnerId) ? voteTaskData.fromPartnerId : (payload.fromPartnerId || payload.delegatorPartnerId)
+              hasPendingDelegatedVote: (voteTaskData && voteTaskData.hasPendingDelegatedVote) || payload.hasPendingDelegatedVote || false
             }
           }
       }
@@ -379,114 +444,60 @@ const previewImage = (url) => {
   })
 }
 
-const handleDelegateVote = () => {
-  uni.showLoading({ title: '加载委托信息' })
-  const userInfo = uni.getStorageSync('userInfo')
+const handleVote = (option, type, delegateData) => {
+  // Determine if it's a delegate vote based on data presence
+  const isDelegate = delegateData && delegateData.fromPartnerId && delegateData.fromPartnerName
   
-  request({
-    url: '/user/vote/task/delegate/list',
-    method: 'GET',
-    data: {
-        voteTaskId: taskId.value,
-        toPartnerId: userInfo.id,
-        status: 1,
-        page: 1,
-        pageSize: 100
-    }
-  }).then(res => {
-      uni.hideLoading()
-      if (res.code === 0 || res.code === 1 || res.code === 200) {
-         let delegates = [];
-         if (Array.isArray(res.data)) {
-             delegates = res.data;
-         } else if (res.data && Array.isArray(res.data.list)) {
-             delegates = res.data.list;
-         } else if (res.data && Array.isArray(res.data.records)) {
-             delegates = res.data.records;
-         }
-
-         if (delegates.length > 0) {
-            showDelegateAction(delegates)
-         } else {
-            uni.showToast({ title: '暂无待处理委托', icon: 'none' })
-         }
-      } else {
-         uni.showToast({ title: '暂无待处理委托', icon: 'none' })
-      }
-  }).catch(err => {
-      uni.hideLoading()
-      console.error(err)
-  })
-}
-
-const showDelegateAction = (delegates) => {
-  // Map delegates to readable strings. Assuming 'fromPartnerName' exists in response or need to be derived
-  const itemList = delegates.map(d => `代理 ${d.fromPartnerName || d.fromPartnerId} 投票`)
-  uni.showActionSheet({
-    itemList: itemList,
-    success: (res) => {
-      const selectedDelegate = delegates[res.tapIndex]
-      showVoteOptions(selectedDelegate)
-    }
-  })
-}
-
-const showVoteOptions = (delegate) => {
-    uni.showActionSheet({
-        itemList: ['同意', '反对', '弃权'],
-        success: (res) => {
-            const option = res.tapIndex + 1
-            submitDelegateVote(delegate.fromPartnerId, option)
-        }
-    })
-}
-
-const submitDelegateVote = (fromPartnerId, option) => {
-    uni.showLoading({ title: '提交委托中' })
-    // Note: User did not provide new proxy submit endpoint, keeping original logic
-    request({
-      url: '/user/h5/vote/delegate/submit',
-      method: 'POST',
-      data: {
-        voteTaskId: taskId.value,
-        voteOption: option,
-        fromPartnerId: fromPartnerId
-      }
-    }).then(res => {
-      uni.hideLoading()
-      if (res.code === 0 || res.code === 1 || res.code === 200) {
-         uni.showToast({ title: '委托投票成功' })
-         fetchDetail(taskId.value)
-      } else {
-         uni.showToast({ title: res.msg || '操作失败', icon: 'none' })
-      }
-    }).catch(() => {
-      uni.hideLoading()
-    })
-}
-
-const handleVote = (option) => {
   const optionText = getVoteText(option)
+  let title = '确认投票'
+  let content = `确认投"${optionText}"吗？提交后不可修改。`
+  
+  if (isDelegate) {
+      title = '确认代投'
+      content = `确认代 ${delegateData.fromPartnerName} 投"${optionText}"吗？`
+  }
+  
   uni.showModal({
-    title: '确认投票',
-    content: `确认投"${optionText}"吗？提交后不可修改。`,
+    title: title,
+    content: content,
     success: (res) => {
       if (res.confirm) {
-        submitVote(option)
+        submitVote(option, isDelegate ? 'delegate' : 'self', delegateData)
       }
     }
   })
 }
 
-const submitVote = (option) => {
+const submitVote = (option, type, delegateData) => {
   uni.showLoading({ title: '提交中' })
+  
+  let url = '/user/h5/vote/submit'
+  // Ensure numeric types for API
+  const postData = {
+    voteTaskId: Number(taskId.value),
+    voteOption: Number(option)
+  }
+  
+  // Double check if it's a delegate vote based on data presence
+  const isDelegate = type === 'delegate' || (delegateData && delegateData.fromPartnerId)
+  
+  if (isDelegate) {
+      url = '/user/h5/vote/delegate/submit'
+      if (delegateData && delegateData.fromPartnerId) {
+          postData.fromPartnerId = Number(delegateData.fromPartnerId)
+      } else {
+          uni.hideLoading()
+          uni.showToast({ title: '缺少委托人信息', icon: 'none' })
+          return
+      }
+  }
+  
+  console.log(`Submitting vote to ${url}:`, postData)
+  
   request({
-    url: '/user/vote/submit',
+    url: url,
     method: 'POST',
-    data: {
-      voteTaskId: taskId.value,
-      voteOption: option
-    }
+    data: postData
   }).then(res => {
     uni.hideLoading()
     // Relaxed check logic aligned with delegate-create:
@@ -494,9 +505,10 @@ const submitVote = (option) => {
     // code=200: Success
     // code=0: Success ONLY if data exists (to filter out business errors with code=0 like "Already delegated")
     if (res.code === 1 || res.code === 200 || (res.code === 0 && res.data)) {
-      uni.navigateTo({
-        url: '/pages/vote-success/index'
-      })
+      uni.showToast({ title: '投票成功' })
+      setTimeout(() => {
+          fetchDetail(taskId.value)
+      }, 1000)
     } else {
       uni.showToast({ title: res.msg || '投票失败', icon: 'none' })
     }

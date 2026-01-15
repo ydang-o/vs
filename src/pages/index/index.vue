@@ -18,12 +18,17 @@
         <view class="card-header">
           <view class="title-wrapper">
             <text class="task-title">{{ item.proposalTitle || item.title }}</text>
-            <text class="delegate-hint text-orange" v-if="item.delegateeName">
-              (您已委托 {{ item.delegateeName }} 投票)
-            </text>
-            <text class="delegate-hint text-blue" v-if="item.delegatorName">
-              ({{ item.delegatorName }} 委托您投票)
-            </text>
+            <view class="tags-row" v-if="item.isProxy || item.delegateeName || item.delegatorName">
+               <text class="delegate-tag text-purple" v-if="item.isProxy">
+                  [代 {{ item.delegatorName || item.fromPartnerName || '他人' }} 投票]
+               </text>
+               <text class="delegate-hint text-orange" v-if="item.delegateeName">
+                 (您已委托 {{ item.delegateeName }} 投票)
+               </text>
+               <text class="delegate-hint text-blue" v-if="item.delegatorName && !item.isProxy">
+                 ({{ item.delegatorName }} 委托您投票)
+               </text>
+            </view>
           </view>
           <view class="badge-group">
             <text class="urgent-badge" v-if="item.urgent">紧急</text>
@@ -292,6 +297,7 @@ onPullDownRefresh(() => {
 .text-gray { color: #9CA3AF; }
 .text-orange { color: #F59E0B; }
 .text-blue { color: #3B82F6; }
+.text-purple { color: #8B5CF6; }
 
 .title-wrapper {
   flex: 1;
@@ -300,9 +306,20 @@ onPullDownRefresh(() => {
   flex-direction: column;
 }
 
+.tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 8rpx;
+}
+
+.delegate-tag {
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
 .delegate-hint {
   font-size: 24rpx;
-  margin-top: 8rpx;
   font-weight: normal;
 }
 

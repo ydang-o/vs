@@ -55,7 +55,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
 
 const currentTab = ref(0)
