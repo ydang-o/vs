@@ -1,4 +1,4 @@
-export const BASE_URL = 'http://119.29.249.72:8080';
+export const BASE_URL = 'http://127.0.0.1:8080';
 
 const request = (options) => {
   return new Promise((resolve, reject) => {

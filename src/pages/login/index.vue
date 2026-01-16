@@ -64,6 +64,9 @@
 import { ref, reactive } from 'vue'
 import { onPullDownRefresh } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
+import { useShare } from '@/composables/useShare.js'
+
+useShare()
 
 onPullDownRefresh(() => {
   // If showing login form, maybe clear fields? Or just stop refresh.

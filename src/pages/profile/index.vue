@@ -26,6 +26,9 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { useShare } from '@/composables/useShare.js'
+
+useShare()
 
 const userInfo = ref({})
 

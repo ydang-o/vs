@@ -17,6 +17,9 @@
 <script setup>
 import { ref } from 'vue'
 import { onPullDownRefresh } from '@dcloudio/uni-app'
+import { useShare } from '@/composables/useShare.js'
+
+useShare({ title: '系统设置' })
 
 onPullDownRefresh(() => {
   setTimeout(() => {

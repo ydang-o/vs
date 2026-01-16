@@ -115,13 +115,19 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
+import { useShare } from '@/composables/useShare.js'
 
 const task = ref(null)
 const taskId = ref(null)
 const isAdmin = ref(false)
 const delegateList = ref([])
+
+// Use global share with dynamic title
+useShare({
+  title: () => task.value?.proposal?.title ? `投票：${task.value.proposal.title}` : '任务详情'
+})
 
 const statistics = computed(() => {
   if (!task.value || !task.value.voteTask) return null
@@ -266,7 +272,8 @@ const fetchDetail = (id) => {
     
     if (res.code === 0 || res.code === 1 || res.code === 200) {
       const payload = res.data || {}
-      const BASE_URL = 'http://119.29.249.72:8080'
+      // TODO: Replace with your actual file server base URL
+      const BASE_URL = 'http://127.0.0.1:8080'
       const resolveImageUrl = (path) => {
         if (!path) return ''
         // If it contains the view controller, it's likely correct (check if needs base url)

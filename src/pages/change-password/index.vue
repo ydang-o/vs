@@ -40,6 +40,9 @@
 import { reactive, ref } from 'vue'
 import { onPullDownRefresh } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
+import { useShare } from '@/composables/useShare.js'
+
+useShare({ title: '修改密码' })
 
 onPullDownRefresh(() => {
   setTimeout(() => {

@@ -13,6 +13,9 @@
 
 <script setup>
 import { onPullDownRefresh } from '@dcloudio/uni-app'
+import { useShare } from '@/composables/useShare.js'
+
+useShare({ title: '投票成功' })
 
 onPullDownRefresh(() => {
   setTimeout(() => {

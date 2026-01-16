@@ -57,6 +57,9 @@
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
+import { useShare } from '@/composables/useShare.js'
+
+useShare({ title: '我的投票记录' })
 
 const currentTab = ref(0)
 const list = ref([])

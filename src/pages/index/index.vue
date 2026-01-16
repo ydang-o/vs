@@ -77,6 +77,9 @@
 import { ref } from 'vue'
 import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import request from '@/utils/request.js'
+import { useShare } from '@/composables/useShare.js'
+
+useShare()
 
 const tasks = ref([])
 

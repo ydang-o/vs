@@ -43,6 +43,10 @@
 import { ref } from 'vue'
 import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import request, { BASE_URL } from '@/utils/request.js'
+import { useShare } from '@/composables/useShare.js'
+
+useShare({ title: '发起委托' })
+
 const voteTaskId = ref(null)
 const partnerList = ref([])
 const partnerIndex = ref(-1)
@@ -109,7 +113,7 @@ const uploadFile = (filePath) => {
   const token = uni.getStorageSync('token')
   
   uni.uploadFile({
-    url: 'http://119.29.249.72:8080/user/file/upload', 
+    url: 'http://127.0.0.1:8080/user/file/upload', 
     filePath: filePath,
     name: 'file',
     header: {
