@@ -152,18 +152,38 @@
               </view>
             </view>
             
-            <view class="vote-distribution">
-              <view class="vote-item">
-                <text class="vote-option agree">同意：{{ voteStatistics.progress.stat.agreeCount }}</text>
-                <text class="vote-ratio">({{ voteStatistics.progress.stat.agreeRatio }}%)</text>
+            <!-- Visual Vote Distribution -->
+            <view class="visual-vote-distribution">
+              <text class="distribution-title">投票分布</text>
+              <view class="vote-bar-item">
+                <view class="bar-row">
+                  <text class="bar-option">同意</text>
+                  <text class="bar-count">{{ voteStatistics.progress.stat.agreeCount }}人</text>
+                </view>
+                <view class="bar-container">
+                  <view class="bar-fill agree-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.agreeCount, voteStatistics.progress.stat.votedCount) + '%' }"></view>
+                </view>
+                <text class="bar-ratio">({{ voteStatistics.progress.stat.agreeRatio }}%)</text>
               </view>
-              <view class="vote-item">
-                <text class="vote-option reject">反对：{{ voteStatistics.progress.stat.rejectCount }}</text>
-                <text class="vote-ratio">({{ voteStatistics.progress.stat.rejectRatio }}%)</text>
+              <view class="vote-bar-item">
+                <view class="bar-row">
+                  <text class="bar-option">反对</text>
+                  <text class="bar-count">{{ voteStatistics.progress.stat.rejectCount }}人</text>
+                </view>
+                <view class="bar-container">
+                  <view class="bar-fill reject-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.rejectCount, voteStatistics.progress.stat.votedCount) + '%' }"></view>
+                </view>
+                <text class="bar-ratio">({{ voteStatistics.progress.stat.rejectRatio }}%)</text>
               </view>
-              <view class="vote-item">
-                <text class="vote-option abstain">弃权：{{ voteStatistics.progress.stat.abstainCount }}</text>
-                <text class="vote-ratio">({{ voteStatistics.progress.stat.abstainRatio }}%)</text>
+              <view class="vote-bar-item">
+                <view class="bar-row">
+                  <text class="bar-option">弃权</text>
+                  <text class="bar-count">{{ voteStatistics.progress.stat.abstainCount }}人</text>
+                </view>
+                <view class="bar-container">
+                  <view class="bar-fill abstain-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.abstainCount, voteStatistics.progress.stat.votedCount) + '%' }"></view>
+                </view>
+                <text class="bar-ratio">({{ voteStatistics.progress.stat.abstainRatio }}%)</text>
               </view>
             </view>
           </view>
@@ -412,6 +432,12 @@ const fetchDelegateInfo = (id) => {
   }).catch(err => {
      console.error('Fetch delegate info failed', err)
   })
+}
+
+// Calculate bar width percentage
+const calculateBarWidth = (count, total) => {
+  if (total === 0) return 0;
+  return Math.round((count / total) * 100);
 }
 
 onLoad((options) => {
@@ -781,7 +807,7 @@ const closeResultModal = () => {
 .stats-card {
   background-color: #F3F4F6;
   border-radius: 12rpx;
-  padding: 20rpx;
+  padding: 24rpx;
   margin-top: 20rpx;
 }
 
@@ -792,9 +818,9 @@ const closeResultModal = () => {
 }
 
 .main-stat {
-  padding-bottom: 20rpx;
+  padding-bottom: 24rpx;
   border-bottom: 1px solid #E5E7EB;
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
 }
 
 .stat-item {
@@ -930,12 +956,27 @@ const closeResultModal = () => {
 }
 
 .view-result-btn {
-  margin-top: 20rpx;
+  margin-top: 24rpx;
   background-color: #fff;
   color: #3B82F6;
   border: 1px solid #3B82F6;
   font-size: 28rpx;
   width: 100%;
+}
+
+.result-area {
+  margin-top: 30rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.result-text {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 20rpx;
+  text-align: center;
+  padding: 10rpx 0;
 }
 
 .admin-area {
@@ -1125,45 +1166,84 @@ const closeResultModal = () => {
   flex-shrink: 0;
 }
 
-.vote-distribution {
+/* Visual Vote Distribution Styles */
+.visual-vote-distribution {
   background-color: #f8f9fa;
   border-radius: 6rpx;
   padding: 10rpx;
+  margin-top: 10rpx;
 }
 
-.vote-item {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  margin-bottom: 5rpx;
+.distribution-title {
+  font-size: 24rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 8rpx;
 }
 
-.vote-item:last-child {
+.vote-bar-item {
+  margin-bottom: 12rpx;
+}
+
+.vote-bar-item:last-child {
   margin-bottom: 0;
 }
 
-.vote-option {
+.bar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4rpx;
+  font-size: 22rpx;
+}
+
+.bar-option {
   font-weight: 500;
-  flex-shrink: 0;
-  margin-right: 8rpx;
+  color: #333;
+  flex: 1;
 }
 
-.vote-option.agree {
-  color: #10B981;
+.bar-count {
+  font-weight: 500;
+  color: #333;
+  text-align: right;
+  min-width: 60rpx;
+  margin-left: 10rpx;
 }
 
-.vote-option.reject {
-  color: #EF4444;
+.bar-container {
+  width: 100%;
+  height: 24rpx;
+  background-color: #e9ecef;
+  border-radius: 12rpx;
+  overflow: hidden;
+  margin-bottom: 4rpx;
 }
 
-.vote-option.abstain {
-  color: #9CA3AF;
+.bar-fill {
+  height: 100%;
+  border-radius: 12rpx;
+  transition: width 0.3s ease;
 }
 
-.vote-ratio {
-  color: #666;
+.agree-fill {
+  background-color: #10B981;
+}
+
+.reject-fill {
+  background-color: #EF4444;
+}
+
+.abstain-fill {
+  background-color: #9CA3AF;
+}
+
+.bar-ratio {
   font-size: 20rpx;
-  flex-shrink: 0;
+  color: #666;
+  text-align: right;
+  display: block;
 }
 
 .records-list {
