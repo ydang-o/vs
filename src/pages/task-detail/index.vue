@@ -110,6 +110,189 @@
           </view>
         </view>
     </view>
+    
+    <!-- Result Modal Popup -->
+    <view v-if="showResultModal" class="modal-overlay" @click="closeResultModal">
+      <view class="modal-content" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title">投票结果</text>
+          <text class="close-btn" @click="closeResultModal">×</text>
+        </view>
+        
+        <scroll-view class="modal-body" scroll-y="true">
+          <!-- Task Status -->
+          <view class="result-section">
+            <text class="section-title">投票状态</text>
+            <view class="status-info">
+              <text :class="['status-text', voteStatistics.taskStatus === 2 ? 'status-ended' : 'status-progress']">
+                {{ voteStatistics.taskStatus === 2 ? '已结束' : '进行中' }}
+              </text>
+            </view>
+          </view>
+          
+          <!-- Progress Info -->
+          <view class="result-section" v-if="voteStatistics.progress">
+            <text class="section-title">投票进度</text>
+            <view class="progress-stats">
+              <view class="progress-stat-item">
+                <text class="stat-label">总参与人数：</text>
+                <text class="stat-value">{{ voteStatistics.progress.stat.partnerCount }}</text>
+              </view>
+              <view class="progress-stat-item">
+                <text class="stat-label">已投票人数：</text>
+                <text class="stat-value">{{ voteStatistics.progress.stat.votedCount }}</text>
+              </view>
+              <view class="progress-stat-item">
+                <text class="stat-label">未投票人数：</text>
+                <text class="stat-value">{{ voteStatistics.progress.stat.unvotedCount }}</text>
+              </view>
+              <view class="progress-stat-item">
+                <text class="stat-label">投票进度：</text>
+                <text class="stat-value">{{ voteStatistics.progress.stat.progress }}%</text>
+              </view>
+            </view>
+            
+            <view class="vote-distribution">
+              <view class="vote-item">
+                <text class="vote-option agree">同意：{{ voteStatistics.progress.stat.agreeCount }}</text>
+                <text class="vote-ratio">({{ voteStatistics.progress.stat.agreeRatio }}%)</text>
+              </view>
+              <view class="vote-item">
+                <text class="vote-option reject">反对：{{ voteStatistics.progress.stat.rejectCount }}</text>
+                <text class="vote-ratio">({{ voteStatistics.progress.stat.rejectRatio }}%)</text>
+              </view>
+              <view class="vote-item">
+                <text class="vote-option abstain">弃权：{{ voteStatistics.progress.stat.abstainCount }}</text>
+                <text class="vote-ratio">({{ voteStatistics.progress.stat.abstainRatio }}%)</text>
+              </view>
+            </view>
+          </view>
+          
+          <!-- Voting Records (only shown if not anonymous) -->
+          <view class="result-section" v-if="voteStatistics.progress && !voteStatistics.progress.anonymous && voteStatistics.progress.records && voteStatistics.progress.records.length > 0">
+            <text class="section-title">投票记录</text>
+            <view class="records-list">
+              <view class="record-item" v-for="(record, index) in voteStatistics.progress.records" :key="index">
+                <view class="record-header">
+                  <text class="record-name">{{ record.name }}</text>
+                  <text :class="['record-vote', getVoteClass(record.voteOption)]">{{ record.voteOption }}</text>
+                </view>
+                <view class="record-details">
+                  <text class="record-time" v-if="record.voteTime">投票时间：{{ record.voteTime }}</text>
+                  <text class="record-status" v-if="record.isDelegate" :class="{ 'delegate-record': record.isDelegate }">委托投票</text>
+                  <text class="record-status" v-if="record.delegateTo">委托给：{{ record.delegateTo }}</text>
+                  <text class="record-status" v-if="record.delegateBy">受托于：{{ record.delegateBy }}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+          
+          <!-- Anonymous Notice -->
+          <view class="result-section" v-if="voteStatistics.progress && voteStatistics.progress.anonymous">
+            <text class="section-title">投票记录</text>
+            <view class="anonymous-notice">
+              <text class="notice-text">本投票为匿名投票，不显示具体投票人信息</text>
+            </view>
+          </view>
+          
+          <!-- Final Result (only shown if task ended) -->
+          <view class="result-section" v-if="voteStatistics.taskStatus === 2 && voteStatistics.result">
+            <text class="section-title">最终结果</text>
+            <view class="final-result">
+              <view class="result-summary">
+                <text class="result-status" :class="{ 'passed': voteStatistics.result.finalResult, 'failed': !voteStatistics.result.finalResult }">
+                  {{ voteStatistics.result.finalResult ? '投票通过' : '投票未通过' }}
+                </text>
+              </view>
+              
+              <view class="result-description" v-if="voteStatistics.result.resultDesc">
+                <text class="result-desc">{{ voteStatistics.result.resultDesc }}</text>
+              </view>
+              
+              <view class="strategy-info">
+                <text class="strategy-label">投票策略：</text>
+                <text class="strategy-value">
+                  {{ voteStatistics.result.voteStrategy === 1 ? '人数票' : 
+                     voteStatistics.result.voteStrategy === 2 ? '出资票' : 
+                     '组合策略' }}
+                </text>
+              </view>
+              
+              <view class="threshold-info">
+                <text class="threshold-label">通过阈值：</text>
+                <text class="threshold-value">{{ voteStatistics.result.passRate }}%</text>
+              </view>
+              
+              <!-- People Vote Result (show only if strategy is people or combination) -->
+              <view class="sub-result-section" v-if="voteStatistics.result.voteStrategy === 1 || voteStatistics.result.voteStrategy === 3">
+                <text class="sub-result-title">人数票结果</text>
+                <view class="sub-result-details">
+                  <view class="result-item">
+                    <text class="result-label">是否通过：</text>
+                    <text class="result-value" :class="{ 'passed': voteStatistics.result.peoplePassed, 'failed': !voteStatistics.result.peoplePassed }">
+                      {{ voteStatistics.result.peoplePassed ? '是' : '否' }}
+                    </text>
+                  </view>
+                  <view class="result-item">
+                    <text class="result-label">总票权数：</text>
+                    <text class="result-value">{{ voteStatistics.result.peopleTotalVotes }}</text>
+                  </view>
+                  <view class="result-item">
+                    <text class="result-label">同意票数：</text>
+                    <text class="result-value">{{ voteStatistics.result.peopleAgreeVotes }}</text>
+                  </view>
+                  <view class="result-item">
+                    <text class="result-label">反对票数：</text>
+                    <text class="result-value">{{ voteStatistics.result.peopleRejectVotes }}</text>
+                  </view>
+                  <view class="result-item">
+                    <text class="result-label">弃权票数：</text>
+                    <text class="result-value">{{ voteStatistics.result.peopleAbstainVotes }}</text>
+                  </view>
+                  <view class="result-item">
+                    <text class="result-label">同意率：</text>
+                    <text class="result-value">{{ voteStatistics.result.peopleAgreeRatio }}%</text>
+                  </view>
+                </view>
+              </view>
+              
+              <!-- Capital Vote Result (show only if strategy is capital or combination) -->
+              <view class="sub-result-section" v-if="voteStatistics.result.voteStrategy === 2 || voteStatistics.result.voteStrategy === 3">
+                <text class="sub-result-title">出资票结果</text>
+                <view class="sub-result-details">
+                  <view class="result-item">
+                    <text class="result-label">是否通过：</text>
+                    <text class="result-value" :class="{ 'passed': voteStatistics.result.capitalPassed, 'failed': !voteStatistics.result.capitalPassed }">
+                      {{ voteStatistics.result.capitalPassed ? '是' : '否' }}
+                    </text>
+                  </view>
+                  <view class="result-item">
+                    <text class="result-label">总权重：</text>
+                    <text class="result-value">{{ voteStatistics.result.capitalTotalRatio }}%</text>
+                  </view>
+                  <view class="result-item">
+                    <text class="result-label">同意权重：</text>
+                    <text class="result-value">{{ voteStatistics.result.capitalAgreeRatio }}%</text>
+                  </view>
+                  <view class="result-item">
+                    <text class="result-label">反对权重：</text>
+                    <text class="result-value">{{ voteStatistics.result.capitalRejectRatio }}%</text>
+                  </view>
+                  <view class="result-item">
+                    <text class="result-label">弃权权重：</text>
+                    <text class="result-value">{{ voteStatistics.result.capitalAbstainRatio }}%</text>
+                  </view>
+                  <view class="result-item">
+                    <text class="result-label">同意得票率：</text>
+                    <text class="result-value">{{ voteStatistics.result.capitalAgreeVoteRatio }}%</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -123,6 +306,8 @@ const task = ref(null)
 const taskId = ref(null)
 const isAdmin = ref(false)
 const delegateList = ref([])
+const showResultModal = ref(false)
+const voteStatistics = ref({})
 
 // Use global share with dynamic title
 useShare({
@@ -426,6 +611,22 @@ const getVoteText = (option) => {
   return map[option] || '未知'
 }
 
+const getVoteClass = (option) => {
+  if (typeof option === 'string') {
+    if (option === '同意') return 'agree'
+    if (option === '反对') return 'reject'
+    if (option === '弃权') return 'abstain'
+    return ''
+  }
+  
+  const map = {
+    1: 'agree',
+    2: 'reject',
+    3: 'abstain'
+  }
+  return map[option] || ''
+}
+
 const getVoteColorClass = (option) => {
   // Handle string options
   if (typeof option === 'string') {
@@ -540,20 +741,29 @@ const goToDelegateCreate = () => {
 }
 
 const viewResult = () => {
+  uni.showLoading({ title: '加载中' });
+  
   request({
     url: `/user/vote/task/stat/${taskId.value}`,
     method: 'GET'
   }).then(res => {
+    uni.hideLoading();
     if (res.code === 0 || res.code === 1 || res.code === 200) {
-      statistics.value = res.data;
+      voteStatistics.value = res.data;
+      showResultModal.value = true;
       console.log('Vote statistics:', res.data);
     } else {
       uni.showToast({ title: res.msg || '获取结果失败', icon: 'none' });
     }
   }).catch(err => {
+    uni.hideLoading();
     console.error('Failed to fetch vote statistics:', err);
     uni.showToast({ title: '获取结果失败', icon: 'none' });
   });
+}
+
+const closeResultModal = () => {
+  showResultModal.value = false;
 }
 </script>
 
@@ -796,5 +1006,354 @@ const viewResult = () => {
   margin-bottom: 10rpx;
   display: block;
   font-weight: 500;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16rpx;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.close-btn {
+  font-size: 32rpx;
+  color: #999;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 15rpx;
+  flex: 1;
+  max-height: 60vh;
+}
+
+.result-section {
+  margin-bottom: 15rpx;
+}
+
+.result-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+  display: block;
+}
+
+.status-info {
+  padding: 10rpx;
+  background-color: #f8f9fa;
+  border-radius: 6rpx;
+  margin-bottom: 10rpx;
+}
+
+.status-text {
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+.status-progress {
+  color: #f59e0b;
+}
+
+.status-ended {
+  color: #10b981;
+}
+
+.progress-stats {
+  background-color: #f8f9fa;
+  border-radius: 6rpx;
+  padding: 10rpx;
+  margin-bottom: 10rpx;
+}
+
+.progress-stat-item {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 5rpx;
+  font-size: 22rpx;
+}
+
+.progress-stat-item:last-child {
+  margin-bottom: 0;
+}
+
+.stat-label {
+  color: #666;
+  flex-shrink: 0;
+  margin-right: 8rpx;
+}
+
+.stat-value {
+  color: #333;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.vote-distribution {
+  background-color: #f8f9fa;
+  border-radius: 6rpx;
+  padding: 10rpx;
+}
+
+.vote-item {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 5rpx;
+}
+
+.vote-item:last-child {
+  margin-bottom: 0;
+}
+
+.vote-option {
+  font-weight: 500;
+  flex-shrink: 0;
+  margin-right: 8rpx;
+}
+
+.vote-option.agree {
+  color: #10B981;
+}
+
+.vote-option.reject {
+  color: #EF4444;
+}
+
+.vote-option.abstain {
+  color: #9CA3AF;
+}
+
+.vote-ratio {
+  color: #666;
+  font-size: 20rpx;
+  flex-shrink: 0;
+}
+
+.records-list {
+  background-color: #f8f9fa;
+  border-radius: 6rpx;
+  padding: 10rpx;
+}
+
+.record-item {
+  padding: 8rpx 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.record-item:last-child {
+  border-bottom: none;
+}
+
+.record-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 4rpx;
+}
+
+.record-name {
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+  margin-right: 8rpx;
+  font-size: 22rpx;
+}
+
+.record-vote {
+  font-weight: bold;
+  padding: 2rpx 8rpx;
+  border-radius: 4rpx;
+  font-size: 20rpx;
+  text-align: right;
+  min-width: 50rpx;
+}
+
+.record-vote.agree {
+  color: #10B981;
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.record-vote.reject {
+  color: #EF4444;
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.record-vote.abstain {
+  color: #9CA3AF;
+  background-color: rgba(156, 163, 175, 0.1);
+}
+
+.record-vote.not-voted {
+  color: #6B7280;
+  background-color: rgba(107, 114, 128, 0.1);
+}
+
+.record-details {
+  font-size: 20rpx;
+  color: #666;
+  padding-left: 8rpx;
+}
+
+.record-status {
+  display: block;
+  margin-top: 2rpx;
+}
+
+.delegate-record {
+  color: #f59e0b;
+}
+
+.anonymous-notice {
+  background-color: #f8f9fa;
+  border-radius: 6rpx;
+  padding: 10rpx;
+  text-align: center;
+}
+
+.notice-text {
+  font-size: 22rpx;
+  color: #666;
+}
+
+.final-result {
+  background-color: #f8f9fa;
+  border-radius: 6rpx;
+  padding: 10rpx;
+}
+
+.result-summary {
+  text-align: center;
+  margin-bottom: 10rpx;
+  padding-bottom: 8rpx;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.result-status {
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+.result-status.passed {
+  color: #10b981;
+}
+
+.result-status.failed {
+  color: #ef4444;
+}
+
+.result-description {
+  text-align: center;
+  margin-bottom: 10rpx;
+  padding-bottom: 8rpx;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.result-desc {
+  font-size: 22rpx;
+  color: #333;
+}
+
+.strategy-info, .threshold-info {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 8rpx;
+  padding: 4rpx 0;
+  font-size: 22rpx;
+}
+
+.strategy-label, .threshold-label {
+  color: #666;
+  flex-shrink: 0;
+  margin-right: 8rpx;
+}
+
+.strategy-value, .threshold-value {
+  color: #333;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.sub-result-section {
+  margin-top: 10rpx;
+  padding-top: 8rpx;
+  border-top: 1px solid #e9ecef;
+}
+
+.sub-result-title {
+  font-size: 22rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 6rpx;
+  display: block;
+}
+
+.sub-result-details {
+  background-color: #fff;
+  border-radius: 6rpx;
+  padding: 8rpx;
+}
+
+.result-item {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 4rpx;
+  font-size: 20rpx;
+}
+
+.result-label {
+  color: #666;
+  flex-shrink: 0;
+  margin-right: 8rpx;
+}
+
+.result-value {
+  color: #333;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.result-value.passed {
+  color: #10b981;
+}
+
+.result-value.failed {
+  color: #ef4444;
 }
 </style>
