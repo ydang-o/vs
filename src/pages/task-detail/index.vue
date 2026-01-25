@@ -90,7 +90,9 @@
         <view class="result-area" v-if="(task.voteTask.hasVoted || isExpired) && !task.voteTask.hasPendingDelegatedVote">
           <text class="result-text" v-if="task.voteTask.hasVoted">您已完成本人投票</text>
           <text class="result-text" v-else-if="isExpired">投票已截止</text>
-          <button class="view-result-btn" @click="viewResult">查看结果</button>
+          <view class="result-status-box">
+            <text class="result-status">{{ voteStatusText }}</text>
+          </view>
         </view>
 
         <!-- Admin View: Voter Details -->
@@ -123,6 +125,7 @@ const task = ref(null)
 const taskId = ref(null)
 const isAdmin = ref(false)
 const delegateList = ref([])
+const voteStatusText = ref('')
 
 // Use global share with dynamic title
 useShare({
@@ -272,8 +275,7 @@ const fetchDetail = (id) => {
     
     if (res.code === 0 || res.code === 1 || res.code === 200) {
       const payload = res.data || {}
-      // TODO: Replace with your actual file server base URL
-      const BASE_URL = 'http://127.0.0.1:8080'
+      const BASE_URL = 'http://119.29.249.72:8080'
       const resolveImageUrl = (path) => {
         if (!path) return ''
         // If it contains the view controller, it's likely correct (check if needs base url)
@@ -361,6 +363,7 @@ const fetchDetail = (id) => {
       if (isAdmin.value) {
         fetchAdminStats(id)
       }
+      fetchVoteStatus(id)
     }
   }).catch(err => {
     uni.stopPullDownRefresh()
@@ -382,6 +385,25 @@ const fetchDetail = (id) => {
         hasVoted: false
       }
     }
+  })
+}
+
+const fetchVoteStatus = (id) => {
+  request({
+    url: `/user/vote/task/stat/${id}`,
+    method: 'GET'
+  }).then(res => {
+    if (res.code === 0 || res.code === 1 || res.code === 200) {
+      const data = res.data || {}
+      if (data.taskStatus === 3 || data.result) {
+        const finalResult = data.result && data.result.finalResult
+        voteStatusText.value = finalResult ? '投票通过' : '投票不通过'
+      } else {
+        voteStatusText.value = '投票中'
+      }
+    }
+  }).catch(() => {
+    voteStatusText.value = isExpired.value ? '投票已截止' : '投票中'
   })
 }
 
@@ -540,17 +562,6 @@ const goToDelegateCreate = () => {
   })
 }
 
-const viewResult = () => {
-  if (task.value && task.value.voteTask && task.value.voteTask.totalCount > 0) {
-      uni.showModal({
-          title: '投票进度',
-          content: `已投票: ${task.value.voteTask.votedCount}/${task.value.voteTask.totalCount} 人`,
-          showCancel: false
-      })
-  } else {
-      uni.showToast({ title: '暂无详细结果', icon: 'none' })
-  }
-}
 </script>
 
 <style>
@@ -568,7 +579,7 @@ const viewResult = () => {
   background-color: #F3F4F6;
   border-radius: 12rpx;
   padding: 20rpx;
-  margin-top: 20rpx;
+  margin: 20rpx 0 24rpx;
 }
 
 .stat-row {
@@ -620,30 +631,42 @@ const viewResult = () => {
   box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
 }
 
+.header {
+  margin-bottom: 30rpx;
+  border-bottom: 1px solid #F3F4F6;
+  padding-bottom: 20rpx;
+}
+
 .title {
   font-size: 36rpx;
   font-weight: bold;
-  color: #111;
-  margin-bottom: 20rpx;
+  color: #111827;
+  margin-bottom: 24rpx;
+  display: block;
+}
+
+.delegate-hint {
+  font-size: 28rpx;
+  margin-bottom: 16rpx;
   display: block;
 }
 
 .meta {
-  color: #666;
   font-size: 24rpx;
-  padding-bottom: 30rpx;
-  border-bottom: 1px solid #eee;
+  color: #9CA3AF;
+  margin-top: 10rpx;
 }
 
 .content {
-  padding: 40rpx 0;
-  min-height: 200rpx;
+  margin-bottom: 40rpx;
 }
 
 .desc {
-  font-size: 28rpx;
-  color: #333;
-  line-height: 1.6;
+  font-size: 30rpx;
+  color: #4B5563;
+  line-height: 1.8;
+  display: block;
+  margin-bottom: 20rpx;
 }
 
 .detail-image {
@@ -662,8 +685,31 @@ const viewResult = () => {
 .section-title {
   font-size: 30rpx;
   font-weight: bold;
-  margin-bottom: 20rpx;
+  margin: 30rpx 0 24rpx;
   color: #333;
+}
+
+.result-text {
+  font-size: 28rpx;
+  color: #6B7280;
+  margin: 0 0 24rpx;
+  line-height: 1.7;
+}
+
+.result-status-box {
+  border: 1px solid #E5E7EB;
+  border-radius: 12rpx;
+  padding: 20rpx 24rpx;
+  background-color: #F9FAFB;
+  margin-top: 24rpx;
+}
+
+.result-status {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111827;
+  display: block;
+  text-align: center;
 }
 
 .btn-group {
@@ -713,15 +759,6 @@ const viewResult = () => {
 .abstain {
   background-color: #9CA3AF;
   color: white;
-}
-
-.view-result-btn {
-  margin-top: 20rpx;
-  background-color: #fff;
-  color: #3B82F6;
-  border: 1px solid #3B82F6;
-  font-size: 28rpx;
-  width: 100%;
 }
 
 .admin-area {

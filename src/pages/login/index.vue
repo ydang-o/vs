@@ -148,63 +148,87 @@ const handleAccountBind = () => {
 
   loading.value = true
 
-  // 1. Verify Account (Pre-login)
-  request({
-    url: '/user/user/preLogin',
-    method: 'POST',
-    data: {
-      username: formData.username,
-      password: formData.password
-    }
-  }).then(res => {
-    if (res.code === 0 || res.code === 1 || res.code === 200) {
-      const userId = res.data.id
-      
-      // 2. Get fresh code for binding
-      uni.login({
-        provider: 'weixin',
-        success: (loginRes) => {
-          if (loginRes.code) {
-            // 3. Bind with wxLogin
-            request({
-              url: '/user/user/wxLogin',
-              method: 'POST',
-              data: {
-                code: loginRes.code,
-                userId: userId
-              }
-            }).then(bindRes => {
-              loading.value = false
-              if (bindRes.code === 0 || bindRes.code === 1 || bindRes.code === 200) {
-                uni.showToast({ title: '绑定成功', icon: 'success' })
-                handleLoginSuccess(bindRes.data)
-              } else {
-                uni.showToast({ title: bindRes.msg || '绑定失败', icon: 'none' })
-              }
-            }).catch(err => {
-              loading.value = false
-              uni.showToast({ title: err.msg || '绑定请求失败', icon: 'none' })
-            })
+  uni.login({
+    provider: 'weixin',
+    success: (loginRes) => {
+      if (!loginRes.code) {
+        loading.value = false
+        uni.showToast({ title: '获取微信授权码失败', icon: 'none' })
+        return
+      }
+
+      request({
+        url: '/user/user/preLogin',
+        method: 'POST',
+        data: {
+          username: formData.username,
+          password: formData.password,
+          code: loginRes.code
+        }
+      }).then(res => {
+        if (res.code === 0 && !res.data) {
+          loading.value = false
+          uni.showToast({ title: res.msg || '账号或密码不正确', icon: 'none' })
+          return
+        }
+
+        if (res.code === 0 || res.code === 1 || res.code === 200) {
+          const userId = res.data && res.data.id
+          if (!userId) {
+            loading.value = false
+            uni.showToast({ title: '账号验证失败', icon: 'none' })
+            return
           }
-        },
-        fail: () => {
-           loading.value = false
-           uni.showToast({ title: '微信授权失败', icon: 'none' })
+
+          uni.login({
+            provider: 'weixin',
+            success: (bindLoginRes) => {
+              if (bindLoginRes.code) {
+                request({
+                  url: '/user/user/wxLogin',
+                  method: 'POST',
+                  data: {
+                    code: bindLoginRes.code,
+                    userId: userId
+                  }
+                }).then(bindRes => {
+                  loading.value = false
+                  if (bindRes.code === 0 || bindRes.code === 1 || bindRes.code === 200) {
+                    uni.showToast({ title: '绑定成功', icon: 'success' })
+                    handleLoginSuccess(bindRes.data)
+                  } else {
+                    uni.showToast({ title: bindRes.msg || '绑定失败', icon: 'none' })
+                  }
+                }).catch(err => {
+                  loading.value = false
+                  uni.showToast({ title: err.msg || '绑定请求失败', icon: 'none' })
+                })
+              } else {
+                loading.value = false
+                uni.showToast({ title: '获取微信授权码失败', icon: 'none' })
+              }
+            },
+            fail: () => {
+              loading.value = false
+              uni.showToast({ title: '微信授权失败', icon: 'none' })
+            }
+          })
+        } else {
+          loading.value = false
+          uni.showToast({ title: res.msg || '账号验证失败', icon: 'none' })
+        }
+      }).catch(err => {
+        loading.value = false
+        if (err.statusCode === 401 || err.code === 401) {
+          uni.showToast({ title: '用户名或密码错误', icon: 'none' })
+        } else {
+          uni.showToast({ title: err.msg || '验证请求失败', icon: 'none' })
         }
       })
-    } else {
+    },
+    fail: () => {
       loading.value = false
-      uni.showToast({ title: res.msg || '账号验证失败', icon: 'none' })
-    }
-  }).catch(err => {
-    loading.value = false
-    // Handle 401 specifically for preLogin
-    if (err.statusCode === 401 || err.code === 401) {
-       console.warn('PreLogin: Verification failed (401)', err)
-       uni.showToast({ title: '用户名或密码错误', icon: 'none' })
-    } else {
-       console.error('PreLogin Error:', err)
-       uni.showToast({ title: err.msg || '验证请求失败', icon: 'none' })
+      uni.showToast({ title: '微信授权失败', icon: 'none' })
     }
   })
 }

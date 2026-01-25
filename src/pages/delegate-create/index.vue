@@ -113,7 +113,7 @@ const uploadFile = (filePath) => {
   const token = uni.getStorageSync('token')
   
   uni.uploadFile({
-    url: 'http://127.0.0.1:8080/user/file/upload', 
+    url: 'http://119.29.249.72:8080/user/file/upload', 
     filePath: filePath,
     name: 'file',
     header: {
