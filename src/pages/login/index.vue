@@ -157,6 +157,14 @@ const handleAccountBind = () => {
       password: formData.password
     }
   }).then(res => {
+    // Correctly handle business failure code 0 with null data (Account/Password incorrect)
+    // Based on user input: { code: 0, msg: "账号或密码不正确", data: null }
+    if (res.code === 0 && !res.data) {
+       loading.value = false
+       uni.showToast({ title: res.msg || '账号或密码不正确', icon: 'none' })
+       return
+    }
+
     if (res.code === 0 || res.code === 1 || res.code === 200) {
       const userId = res.data.id
       

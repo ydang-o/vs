@@ -19,6 +19,10 @@
         <text>系统设置</text>
         <text class="arrow">></text>
       </view>
+      <view class="menu-item" @click="handleUnbind">
+        <text>解除微信绑定</text>
+        <text class="arrow">></text>
+      </view>
     </view>
   </view>
 </template>
@@ -27,6 +31,7 @@
 import { ref } from 'vue'
 import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { useShare } from '@/composables/useShare.js'
+import request from '@/utils/request.js'
 
 useShare()
 
@@ -67,6 +72,34 @@ const goToMyVotes = () => {
 const goToSettings = () => {
   uni.navigateTo({
     url: '/pages/settings/index'
+  })
+}
+
+const handleUnbind = () => {
+  uni.showModal({
+    title: '提示',
+    content: '确定要解除微信绑定吗？',
+    success: (res) => {
+      if (res.confirm) {
+        request({
+          url: '/user/user/unbindWechat',
+          method: 'POST'
+        }).then(() => {
+          uni.showToast({
+            title: '解绑成功',
+            icon: 'success'
+          })
+          
+          setTimeout(() => {
+            uni.removeStorageSync('token')
+            uni.removeStorageSync('userInfo')
+            uni.reLaunch({
+              url: '/pages/login/index'
+            })
+          }, 1500)
+        })
+      }
+    }
   })
 }
 </script>

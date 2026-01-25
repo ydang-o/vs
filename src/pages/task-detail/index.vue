@@ -272,8 +272,7 @@ const fetchDetail = (id) => {
     
     if (res.code === 0 || res.code === 1 || res.code === 200) {
       const payload = res.data || {}
-      // TODO: Replace with your actual file server base URL
-      const BASE_URL = 'http://127.0.0.1:8080'
+      const BASE_URL = 'http://localhost:8080'
       const resolveImageUrl = (path) => {
         if (!path) return ''
         // If it contains the view controller, it's likely correct (check if needs base url)
@@ -541,15 +540,20 @@ const goToDelegateCreate = () => {
 }
 
 const viewResult = () => {
-  if (task.value && task.value.voteTask && task.value.voteTask.totalCount > 0) {
-      uni.showModal({
-          title: '投票进度',
-          content: `已投票: ${task.value.voteTask.votedCount}/${task.value.voteTask.totalCount} 人`,
-          showCancel: false
-      })
-  } else {
-      uni.showToast({ title: '暂无详细结果', icon: 'none' })
-  }
+  request({
+    url: `/user/vote/task/stat/${taskId.value}`,
+    method: 'GET'
+  }).then(res => {
+    if (res.code === 0 || res.code === 1 || res.code === 200) {
+      statistics.value = res.data;
+      console.log('Vote statistics:', res.data);
+    } else {
+      uni.showToast({ title: res.msg || '获取结果失败', icon: 'none' });
+    }
+  }).catch(err => {
+    console.error('Failed to fetch vote statistics:', err);
+    uni.showToast({ title: '获取结果失败', icon: 'none' });
+  });
 }
 </script>
 
