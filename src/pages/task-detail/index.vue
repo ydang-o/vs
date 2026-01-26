@@ -138,7 +138,7 @@ const statistics = computed(() => {
   const vt = task.value.voteTask
   
   let agree = vt.agreeCount || 0
-  let reject = vt.opposeCount || vt.rejectCount || 0
+  let reject = vt.rejectCount || 0
   let abstain = vt.abstainCount || vt.waiverCount || 0
   
   // Calculate from list if explicit counts are missing
