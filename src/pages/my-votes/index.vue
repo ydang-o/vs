@@ -14,11 +14,12 @@
         class="task-card" 
         v-for="(item, index) in list" 
         :key="index"
-        @click="goToDetail(item.voteTaskId || item.id)"
+        @click="goToDetail(item.voteTaskId || item.id, item.voteStrategy || item.vote_strategy || item.strategy, item.itemType || item.voteType)"
       >
         <view class="card-header">
           <view class="title-wrapper">
             <text class="task-title">{{ item.proposalTitle || item.title }}</text>
+            <text class="type-tag" v-if="(item.voteStrategy || item.vote_strategy || item.strategy) == 3">[组合出资{{ (item.itemType || item.voteType) == 1 ? ' 1.人数票' : (item.itemType || item.voteType) == 2 ? ' 2.出资票' : '' }}]</text>
             <text class="delegate-hint text-orange" v-if="item.delegateeName">
               (您已委托 {{ item.delegateeName }} 投票)
             </text>
@@ -162,9 +163,16 @@ const loadMore = () => {
   fetchData()
 }
 
-const goToDetail = (id) => {
+const goToDetail = (id, strategy, itemType) => {
+  let url = `/pages/task-detail/index?id=${id}`
+  if (strategy !== undefined && strategy !== null) {
+    url += `&voteStrategy=${strategy}`
+  }
+  if (itemType !== undefined && itemType !== null) {
+    url += `&itemType=${itemType}`
+  }
   uni.navigateTo({
-    url: `/pages/task-detail/index?id=${id}`
+    url: url
   })
 }
 
@@ -265,6 +273,11 @@ onShow(() => {
   color: #333;
   flex: 1;
   margin-right: 20rpx;
+}
+.type-tag {
+  font-size: 24rpx;
+  color: #3B82F6;
+  margin-top: 6rpx;
 }
 
 .status-badge {

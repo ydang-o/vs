@@ -13,11 +13,12 @@
         class="task-card" 
         v-for="(item, index) in tasks" 
         :key="index"
-        @click="goToDetail(item.voteTaskId || item.id)"
+        @click="goToDetail(item.voteTaskId || item.id, item.voteStrategy || item.vote_strategy || item.strategy, item.itemType || item.voteType)"
       >
         <view class="card-header">
           <view class="title-wrapper">
             <text class="task-title">{{ item.proposalTitle || item.title }}</text>
+            <text class="type-tag" v-if="(item.voteStrategy || item.strategy || item.vote_strategy) == 3">[组合出资{{ (item.itemType || item.voteType) == 1 ? ' 1.人数票' : (item.itemType || item.voteType) == 2 ? ' 2.出资票' : '' }}]</text>
             <view class="tags-row" v-if="item.isProxy || item.delegateeName || item.delegatorName">
                <text class="delegate-tag text-purple" v-if="item.isProxy">
                   [代 {{ item.delegatorName || item.fromPartnerName || '他人' }} 投票]
@@ -83,6 +84,10 @@ useShare()
 
 const tasks = ref([])
 
+const isAdminUser = (info) => {
+  return !!info && (info.role === 'admin' || info.username === 'admin' || info.isAdmin === true)
+}
+
 const isUrgent = (timeStr) => {
   if (!timeStr || timeStr === '进行中') return false
   try {
@@ -106,7 +111,7 @@ const fetchTasks = () => {
   }
   
   const userInfo = uni.getStorageSync('userInfo')
-  const isAdmin = userInfo && userInfo.username === 'admin'
+  const isAdmin = isAdminUser(userInfo)
   
   if (isAdmin) {
     // uni.hideTabBar() // User requested to keep tab bar
@@ -114,59 +119,79 @@ const fetchTasks = () => {
     uni.showTabBar()
   }
 
-  const url = isAdmin ? '/user/h5/proposal/list' : '/user/vote/my/pending'
-  const dataParams = isAdmin ? { pageNum: 1, pageSize: 20 } : { page: 1, pageSize: 20 }
-
-  request({
-    url: url,
-    method: 'GET',
-    data: dataParams
-  }).then(res => {
-    if (res.code === 0 || res.code === 1 || res.code === 200) {
-      // Handle both new 'list' format and potential 'records' or direct array
-      let listData = []
-      const data = res.data;
-      
-      if (Array.isArray(data)) {
-        listData = data;
-      } else if (data && Array.isArray(data.records)) {
-        listData = data.records;
-      } else if (data && Array.isArray(data.list)) {
-        listData = data.list;
-      }
-      
-      // Map admin list to view model if needed
-      if (isAdmin) {
-          tasks.value = listData.map(item => {
-              // Assuming admin list structure might be slightly different or same
-              // Need to ensure fields match what template expects: 
-              // id/voteTaskId, title/proposalTitle, endTime, votedCount, totalCount, stats...
-              return {
-                  ...item,
-                  voteTaskId: item.voteTaskId || item.id,
-                  proposalTitle: item.title, // Admin list likely has 'title'
-                  // If admin list doesn't have stats directly, they might be missing or under a different key
-                  // Using safe fallbacks
-                  agreeCount: item.agreeCount || 0,
-                  opposeCount: item.opposeCount || item.rejectCount || 0,
-                  abstainCount: item.abstainCount || item.waiverCount || 0,
-                  votedCount: item.votedCount || 0,
-                  totalCount: item.totalCount || item.partnerCount || 0
-              }
-          })
+  const fetchUserList = () => {
+    return request({
+      url: '/user/vote/my/pending',
+      method: 'GET',
+      data: { page: 1, pageSize: 20 }
+    }).then(res => {
+      if (res.code === 0 || res.code === 1 || res.code === 200) {
+        let listData = []
+        const data = res.data
+        if (Array.isArray(data)) {
+          listData = data
+        } else if (data && Array.isArray(data.records)) {
+          listData = data.records
+        } else if (data && Array.isArray(data.list)) {
+          listData = data.list
+        }
+        tasks.value = listData
       } else {
-          tasks.value = listData
+        uni.showToast({ title: res.msg || '获取任务失败', icon: 'none' })
       }
-      
-    } else {
-      uni.showToast({ title: res.msg || '获取任务失败', icon: 'none' })
-    }
+    })
+  }
+
+  const fetchAdminList = () => {
+    return request({
+      url: '/user/h5/proposal/list',
+      method: 'GET',
+      data: { pageNum: 1, pageSize: 20 }
+    }).then(res => {
+      if (res.code === 0 && res.msg && res.msg.includes('权限不足')) {
+        uni.showToast({ title: res.msg, icon: 'none' })
+        return fetchUserList()
+      }
+
+      if (res.code === 0 || res.code === 1 || res.code === 200) {
+        let listData = []
+        const data = res.data
+
+        if (Array.isArray(data)) {
+          listData = data
+        } else if (data && Array.isArray(data.records)) {
+          listData = data.records
+        } else if (data && Array.isArray(data.list)) {
+          listData = data.list
+        }
+
+        tasks.value = listData.map(item => {
+          return {
+            ...item,
+            voteTaskId: item.voteTaskId || item.id,
+            proposalTitle: item.title,
+            voteStrategy: item.voteStrategy || item.vote_strategy || item.strategy,
+            itemType: item.itemType || item.voteType,
+            agreeCount: item.agreeCount || 0,
+            opposeCount: item.opposeCount || item.rejectCount || 0,
+            abstainCount: item.abstainCount || item.waiverCount || 0,
+            votedCount: item.votedCount || 0,
+            totalCount: item.totalCount || item.partnerCount || 0
+          }
+        })
+      } else {
+        uni.showToast({ title: res.msg || '获取任务失败', icon: 'none' })
+      }
+    })
+  }
+
+  const requestFn = isAdmin ? fetchAdminList : fetchUserList
+  requestFn().finally(() => {
     uni.stopPullDownRefresh()
   }).catch(err => {
     if (err.statusCode !== 401) {
       console.error(err)
     }
-    // Mock data if API fails
     tasks.value = [
       { id: 1, title: '关于扩大合伙人规模的议案', status: 'active', endTime: '2023-12-31', passRate: 60 },
       { id: 2, title: '2024年度分红方案', status: 'ended', endTime: '2023-11-30', passRate: 50 }
@@ -174,9 +199,16 @@ const fetchTasks = () => {
   })
 }
 
-const goToDetail = (id) => {
+const goToDetail = (id, strategy, itemType) => {
+  let url = `/pages/task-detail/index?id=${id}`
+  if (strategy !== undefined && strategy !== null) {
+    url += `&voteStrategy=${strategy}`
+  }
+  if (itemType !== undefined && itemType !== null) {
+    url += `&itemType=${itemType}`
+  }
   uni.navigateTo({
-    url: `/pages/task-detail/index?id=${id}`
+    url: url
   })
 }
 
@@ -235,6 +267,11 @@ onPullDownRefresh(() => {
   color: #111827;
   flex: 1;
   margin-right: 20rpx;
+}
+.type-tag {
+  font-size: 24rpx;
+  color: #3B82F6;
+  margin-top: 6rpx;
 }
 
 .badge-group {

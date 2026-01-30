@@ -57,6 +57,9 @@
       <!-- Self Vote Area -->
         <view class="vote-area" v-if="task.voteTask.canVote && !isExpired">
           <view class="section-title">本人投票</view>
+          <view class="section-title">
+            {{ effectiveItemType === 2 ? '2.出资票' : effectiveItemType === 1 ? '1.人数票' : '投票' }}
+          </view>
           <view class="btn-group">
             <button class="vote-btn agree" @click="handleVote(1, 'self')">同意</button>
             <button class="vote-btn reject" @click="handleVote(2, 'self')">反对</button>
@@ -70,7 +73,9 @@
         <!-- Delegate Vote Area(s) -->
         <view class="vote-area delegate-vote-area" v-for="(delegate, index) in delegateList" :key="index">
           <view class="section-title">代 {{ delegate.fromPartnerName }} 投票</view>
-          
+          <view class="section-title" v-if="delegate.hasVoted !== 1">
+            {{ effectiveItemType === 2 ? '2.出资票' : effectiveItemType === 1 ? '1.人数票' : '投票' }}
+          </view>
           <view class="btn-group" v-if="delegate.hasVoted !== 1">
             <button class="vote-btn agree" @click="handleVote(1, 'delegate', delegate)">同意</button>
             <button class="vote-btn reject" @click="handleVote(2, 'delegate', delegate)">反对</button>
@@ -126,6 +131,15 @@ const taskId = ref(null)
 const isAdmin = ref(false)
 const delegateList = ref([])
 const voteStatusText = ref('')
+const initialStrategy = ref(null)
+const initialItemType = ref(null)
+const selfPeopleOption = ref(null)
+const selfCapitalOption = ref(null)
+const delegateSelections = ref({})
+
+const isAdminUser = (info) => {
+  return !!info && (info.role === 'admin' || info.username === 'admin' || info.isAdmin === true)
+}
 
 // Use global share with dynamic title
 useShare({
@@ -162,6 +176,43 @@ const statistics = computed(() => {
     unvoted,
     total
   }
+})
+
+const isComboStrategy = computed(() => {
+  const strategy = task.value && task.value.voteTask ? task.value.voteTask.voteStrategy : null
+  
+  // Explicit strategy check: only 3 is combo
+  if (Number(strategy) === 3) return true
+
+  // Inference from voter list (safer check)
+  // Only infer if we find explicit capital votes (1=Agree, 2=Reject, 3=Abstain)
+  // This avoids false positives where voteOptionCapital might be present but 0/null
+  if (task.value && task.value.voteTask && task.value.voteTask.voterList) {
+    const hasCapitalVotes = task.value.voteTask.voterList.some(v => {
+        const val = Number(v.voteOptionCapital)
+        return val === 1 || val === 2 || val === 3
+    })
+    if (hasCapitalVotes) {
+        console.log('Inferred isComboStrategy from voterList (found valid capital votes)')
+        return true
+    }
+  }
+  
+  return false
+})
+
+const effectiveItemType = computed(() => {
+  if (initialItemType.value !== null && initialItemType.value !== undefined) {
+    return Number(initialItemType.value)
+  }
+  const vt = task.value && task.value.voteTask ? task.value.voteTask : null
+  if (vt && vt.itemType !== undefined && vt.itemType !== null) return Number(vt.itemType)
+  if (vt && vt.voteType !== undefined && vt.voteType !== null) return Number(vt.voteType)
+  return null
+})
+
+const canSubmitSelfCombo = computed(() => {
+  return isComboStrategy.value && selfPeopleOption.value && selfCapitalOption.value
 })
 
 const isExpired = computed(() => {
@@ -235,11 +286,20 @@ const fetchDelegateInfo = (id) => {
 onLoad((options) => {
   if (options.id) {
     taskId.value = options.id
-    const userInfo = uni.getStorageSync('userInfo')
-    // As per user requirement: Only 'admin' username can see admin view
-    if (userInfo && userInfo.username === 'admin') {
-      isAdmin.value = true
+    if (options.voteStrategy !== undefined && options.voteStrategy !== null) {
+      const nextStrategy = Number(options.voteStrategy)
+      if (!Number.isNaN(nextStrategy)) {
+        initialStrategy.value = nextStrategy
+      }
     }
+    if (options.itemType !== undefined && options.itemType !== null) {
+      const nextItemType = Number(options.itemType)
+      if (!Number.isNaN(nextItemType)) {
+        initialItemType.value = nextItemType
+      }
+    }
+    const userInfo = uni.getStorageSync('userInfo')
+    isAdmin.value = isAdminUser(userInfo)
     fetchDetail(options.id)
   }
 })
@@ -303,6 +363,9 @@ const fetchDetail = (id) => {
       // Check if it's the new flat structure
       const isFlatStructure = payload.voteTaskId !== undefined && payload.title !== undefined
       
+      console.log('Payload:', payload)
+      console.log('isFlatStructure:', isFlatStructure)
+
       if (isFlatStructure) {
           const stats = payload.voteStats || {}
           task.value = {
@@ -317,6 +380,8 @@ const fetchDetail = (id) => {
                   canVote: payload.canVote,
                   canDelegateVote: payload.canDelegateVote,
                   hasVoted: payload.hasVoted,
+                  itemType: payload.itemType || payload.voteType,
+                  voteStrategy: (payload.voteStrategy !== undefined ? payload.voteStrategy : (payload.vote_strategy !== undefined ? payload.vote_strategy : payload.strategy)) || initialStrategy.value,
                   voterList: payload.voteRecords || [],
                   // Statistics
                   agreeCount: stats.agreeCount || 0,
@@ -349,6 +414,8 @@ const fetchDetail = (id) => {
               canVote: voteTaskData ? ((voteTaskData.status === 1 || voteTaskData.status === undefined) && !voteTaskData.hasVoted) : (payload.canVote),
               canDelegateVote: voteTaskData ? voteTaskData.canDelegateVote : (payload.canDelegateVote),
               hasVoted: voteTaskData ? voteTaskData.hasVoted : (payload.hasVoted),
+              itemType: (voteTaskData && (voteTaskData.itemType || voteTaskData.voteType)) || payload.itemType || payload.voteType,
+              voteStrategy: (voteTaskData && (voteTaskData.voteStrategy !== undefined ? voteTaskData.voteStrategy : (voteTaskData.vote_strategy !== undefined ? voteTaskData.vote_strategy : voteTaskData.strategy))) || payload.voteStrategy || payload.vote_strategy || payload.strategy || initialStrategy.value,
               votedCount: voteTaskData ? (voteTaskData.votedCount || 0) : 0,
               totalCount: voteTaskData ? (voteTaskData.totalCount || 0) : 0,
               voterList: voteTaskData ? (voteTaskData.voterList || []) : [],
@@ -358,6 +425,8 @@ const fetchDetail = (id) => {
             }
           }
       }
+      console.log('Mapped Task:', task.value)
+
       
       // If admin, fetch additional stats details (still needed for detailed voter list if not present in main detail)
       if (isAdmin.value) {
@@ -382,7 +451,8 @@ const fetchDetail = (id) => {
         endTime: '2023-12-31',
         canVote: true,
         canDelegateVote: true,
-        hasVoted: false
+        hasVoted: false,
+        voteStrategy: 1
       }
     }
   })
@@ -395,6 +465,24 @@ const fetchVoteStatus = (id) => {
   }).then(res => {
     if (res.code === 0 || res.code === 1 || res.code === 200) {
       const data = res.data || {}
+      
+      // Update task status if changed
+      if (task.value && task.value.voteTask) {
+          if (data.taskStatus !== undefined) task.value.voteTask.status = data.taskStatus
+          // Try to recover voteStrategy if missing from detail
+          if (data.voteStrategy !== undefined && data.voteStrategy !== null) {
+              const nextStrategy = Number(data.voteStrategy)
+              const currentStrategy = Number(task.value.voteTask.voteStrategy)
+              if (!Number.isNaN(nextStrategy)) {
+                  if (nextStrategy === 3) {
+                      task.value.voteTask.voteStrategy = nextStrategy
+                  } else if (!currentStrategy) {
+                      task.value.voteTask.voteStrategy = nextStrategy
+                  }
+              }
+          }
+      }
+
       if (data.taskStatus === 3 || data.result) {
         const finalResult = data.result && data.result.finalResult
         voteStatusText.value = finalResult ? '投票通过' : '投票不通过'
@@ -466,6 +554,27 @@ const getVoteColorClass = (option) => {
   return map[option] || 'text-gray'
 }
 
+const getComboBtnClass = (scope, type, val, baseClass, partnerId) => {
+  let selectedVal = null
+  if (scope === 'self') {
+    if (type === 'people') selectedVal = selfPeopleOption.value
+    else if (type === 'capital') selectedVal = selfCapitalOption.value
+  } else if (scope === 'delegate' && partnerId) {
+    const sel = delegateSelections.value[partnerId]
+    if (sel) {
+        selectedVal = sel[type]
+    }
+  }
+  
+  // If selected matches current button value, use solid style
+  if (selectedVal === val) {
+    return `vote-btn ${baseClass}`
+  }
+  // If nothing is selected in this group, use outline (neutral) style? 
+  // Or just use outline for everything unselected.
+  return `vote-btn ${baseClass}-outline`
+}
+
 const previewImage = (url) => {
   if (!url) return
   uni.previewImage({
@@ -473,17 +582,57 @@ const previewImage = (url) => {
   })
 }
 
+const selectSelfOption = (type, option) => {
+  if (type === 'people') {
+    selfPeopleOption.value = option
+  } else if (type === 'capital') {
+    selfCapitalOption.value = option
+  }
+}
+
+const selectDelegateOption = (fromPartnerId, type, option) => {
+  if (!fromPartnerId) return
+  const current = delegateSelections.value[fromPartnerId] || {}
+  delegateSelections.value = {
+    ...delegateSelections.value,
+    [fromPartnerId]: {
+      ...current,
+      [type]: option
+    }
+  }
+}
+
+const canSubmitDelegateCombo = (fromPartnerId) => {
+  if (!isComboStrategy.value) return false
+  const sel = delegateSelections.value[fromPartnerId]
+  return !!(sel && sel.people && sel.capital)
+}
+
+const resetSelections = (type, delegateData) => {
+  if (type === 'self') {
+    selfPeopleOption.value = null
+    selfCapitalOption.value = null
+    return
+  }
+  if (delegateData && delegateData.fromPartnerId) {
+    const next = { ...delegateSelections.value }
+    delete next[delegateData.fromPartnerId]
+    delegateSelections.value = next
+  }
+}
+
 const handleVote = (option, type, delegateData) => {
   // Determine if it's a delegate vote based on data presence
-  const isDelegate = delegateData && delegateData.fromPartnerId && delegateData.fromPartnerName
+  const isDelegate = !!(delegateData && delegateData.fromPartnerId)
   
   const optionText = getVoteText(option)
   let title = '确认投票'
   let content = `确认投"${optionText}"吗？提交后不可修改。`
   
   if (isDelegate) {
+      const delegateName = delegateData.fromPartnerName || delegateData.delegatorName || delegateData.delegatorRealName || '他人'
       title = '确认代投'
-      content = `确认代 ${delegateData.fromPartnerName} 投"${optionText}"吗？`
+      content = `确认代 ${delegateName} 投"${optionText}"吗？`
   }
   
   uni.showModal({
@@ -497,23 +646,83 @@ const handleVote = (option, type, delegateData) => {
   })
 }
 
-const submitVote = (option, type, delegateData) => {
+const handleComboSubmit = (type, delegateData) => {
+  if (!isComboStrategy.value) return
+  let peopleOption = null
+  let capitalOption = null
+
+  if (type === 'delegate') {
+    if (!delegateData || !delegateData.fromPartnerId) {
+      uni.showToast({ title: '缺少委托人信息', icon: 'none' })
+      return
+    }
+    const sel = delegateSelections.value[delegateData.fromPartnerId] || {}
+    peopleOption = sel.people
+    capitalOption = sel.capital
+  } else {
+    peopleOption = selfPeopleOption.value
+    capitalOption = selfCapitalOption.value
+  }
+
+  if (!peopleOption || !capitalOption) {
+    uni.showToast({ title: '请先选择人数票和出资票', icon: 'none' })
+    return
+  }
+
+  const peopleText = getVoteText(peopleOption)
+  const capitalText = getVoteText(capitalOption)
+  const isDelegate = type === 'delegate'
+  const delegateName = isDelegate && delegateData ? (delegateData.fromPartnerName || delegateData.delegatorName || delegateData.delegatorRealName || '他人') : ''
+
+  const title = isDelegate ? '确认代投' : '确认投票'
+  const content = isDelegate
+    ? `确认代 ${delegateName} 投票吗？\n人数票：${peopleText}\n出资票：${capitalText}`
+    : `确认投票吗？\n人数票：${peopleText}\n出资票：${capitalText}`
+
+  uni.showModal({
+    title,
+    content,
+    success: (res) => {
+      if (res.confirm) {
+        submitVote(peopleOption, isDelegate ? 'delegate' : 'self', delegateData, capitalOption)
+      }
+    }
+  })
+}
+
+const submitVote = (option, type, delegateData, optionCapital) => {
   uni.showLoading({ title: '提交中' })
   
   let url = '/user/h5/vote/submit'
-  // Ensure numeric types for API
   const postData = {
-    voteTaskId: Number(taskId.value),
-    voteOption: Number(option)
+    voteTaskId: Number(taskId.value)
+  }
+  const isDelegate = type === 'delegate' || (delegateData && delegateData.fromPartnerId)
+  const itemType = effectiveItemType.value
+  if (itemType === 1) {
+    postData.voteOption = Number(option)
+  } else if (itemType === 2) {
+    const capitalValue = optionCapital !== undefined && optionCapital !== null ? optionCapital : option
+    postData.voteOptionCapital = Number(capitalValue)
+  } else {
+    if (!isDelegate && isComboStrategy.value && (optionCapital === undefined || optionCapital === null)) {
+      uni.hideLoading()
+      uni.showToast({ title: '组合投票需同时提交出资票', icon: 'none' })
+      return
+    }
+    postData.voteOption = Number(option)
+    if (optionCapital !== undefined && optionCapital !== null) {
+      postData.voteOptionCapital = Number(optionCapital)
+    }
   }
   
   // Double check if it's a delegate vote based on data presence
-  const isDelegate = type === 'delegate' || (delegateData && delegateData.fromPartnerId)
   
   if (isDelegate) {
       url = '/user/h5/vote/delegate/submit'
       if (delegateData && delegateData.fromPartnerId) {
           postData.fromPartnerId = Number(delegateData.fromPartnerId)
+          postData.isDelegate = true
       } else {
           uni.hideLoading()
           uni.showToast({ title: '缺少委托人信息', icon: 'none' })
@@ -535,11 +744,22 @@ const submitVote = (option, type, delegateData) => {
     // code=0: Success ONLY if data exists (to filter out business errors with code=0 like "Already delegated")
     if (res.code === 1 || res.code === 200 || (res.code === 0 && res.data)) {
       uni.showToast({ title: '投票成功' })
+      resetSelections(isDelegate ? 'delegate' : 'self', delegateData)
       setTimeout(() => {
           fetchDetail(taskId.value)
       }, 1000)
     } else {
-      uni.showToast({ title: res.msg || '投票失败', icon: 'none' })
+      if (res.msg && res.msg.includes('组合投票必须包含出资投票选项')) {
+         if (task.value && task.value.voteTask) {
+             console.log('Auto-correcting voteStrategy to 3 based on server error')
+             task.value.voteTask.voteStrategy = 3
+             uni.showToast({ title: '已切换至组合投票模式，请重新选择', icon: 'none', duration: 2000 })
+         } else {
+             uni.showToast({ title: res.msg || '投票失败', icon: 'none' })
+         }
+      } else {
+         uni.showToast({ title: res.msg || '投票失败', icon: 'none' })
+      }
     }
   }).catch(() => {
     uni.hideLoading()
@@ -759,6 +979,24 @@ const goToDelegateCreate = () => {
 .abstain {
   background-color: #9CA3AF;
   color: white;
+}
+
+.agree-outline {
+  background-color: #ECFDF5;
+  color: #10B981;
+  border: 1px solid #10B981;
+}
+
+.reject-outline {
+  background-color: #FEF2F2;
+  color: #EF4444;
+  border: 1px solid #EF4444;
+}
+
+.abstain-outline {
+  background-color: #F3F4F6;
+  color: #6B7280;
+  border: 1px solid #9CA3AF;
 }
 
 .admin-area {
