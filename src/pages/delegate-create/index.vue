@@ -17,7 +17,7 @@
       </view>
 
       <view class="form-item vertical">
-        <text class="label">委托证明材料</text>
+        <text class="label">委托证明材料（可选）</text>
         <view class="upload-area" @click="chooseImage">
           <image 
             v-if="proofFile" 
@@ -173,10 +173,6 @@ const uploadFile = (filePath) => {
 const handleSubmit = () => {
   if (partnerIndex.value < 0) {
     uni.showToast({ title: '请选择受托人', icon: 'none' })
-    return
-  }
-  if (!uploadedPath.value) {
-    uni.showToast({ title: '请上传证明材料', icon: 'none' })
     return
   }
 
