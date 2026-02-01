@@ -185,14 +185,27 @@ const getStatusText = (item) => {
   return '已投票'
 }
 
+const getVoteValue = (item) => {
+  // Check myVoteOption first (Headcount vote)
+  if (item.myVoteOption !== null && item.myVoteOption !== undefined && item.myVoteOption != 0) {
+    return Number(item.myVoteOption)
+  }
+  // Check myVoteOptionCapital (Capital vote)
+  if (item.myVoteOptionCapital !== null && item.myVoteOptionCapital !== undefined && item.myVoteOptionCapital != 0) {
+    return Number(item.myVoteOptionCapital)
+  }
+  return 0
+}
+
 const getVoteOptionText = (val) => {
   const map = { 1: '同意', 2: '反对', 3: '弃权' }
-  return map[val] || '未知'
+  return map[Number(val)] || '未知'
 }
 
 const getVoteColorClass = (val) => {
-    if (val === 1) return 'text-green'
-    if (val === 2) return 'text-red'
+    const v = Number(val)
+    if (v === 1) return 'text-green'
+    if (v === 2) return 'text-red'
     return 'text-gray'
 }
 

@@ -26,30 +26,70 @@
       </view>
 
       <!-- Statistics Area for All Users -->
-      <view class="stats-card" v-if="statistics">
-        <view class="stat-row main-stat">
+      <view class="stats-card" v-if="task && task.voteTask">
+        <!-- Strategy 1 or 3: Headcount Participation -->
+        <view class="stat-row main-stat" v-if="(currentVoteStrategy === 1 || currentVoteStrategy === 3) && effectiveItemType !== 2">
+          <text class="section-label" v-if="currentVoteStrategy === 3 && !effectiveItemType" style="font-size: 24rpx; color: #666; margin-bottom: 10rpx; display: block; width: 100%;">1. 人数票统计</text>
           <view class="stat-item">
-            <text class="stat-num">{{ statistics.voted }}</text>
+            <text class="stat-num">{{ task.voteTask.votedCount || 0 }}</text>
             <text class="stat-label">已投票</text>
           </view>
           <view class="stat-divider"></view>
           <view class="stat-item">
-            <text class="stat-num">{{ statistics.unvoted }}</text>
+            <text class="stat-num">{{ (task.voteTask.totalCount || 0) - (task.voteTask.votedCount || 0) }}</text>
             <text class="stat-label">未投票</text>
           </view>
         </view>
-        <view class="stat-row sub-stat">
-          <view class="stat-item">
-            <text class="stat-val text-green">{{ statistics.agree }}</text>
-            <text class="stat-label">同意</text>
+
+        <!-- Strategy 1 or 3: Headcount Result Details -->
+        <view v-if="(currentVoteStrategy === 1 || currentVoteStrategy === 3) && effectiveItemType !== 2">
+           <view class="stat-row sub-stat">
+            <view class="stat-item">
+              <text class="stat-val text-green">{{ task.voteTask.agreeCount || 0 }}</text>
+              <text class="stat-label">同意</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-val text-red">{{ task.voteTask.rejectCount || 0 }}</text>
+              <text class="stat-label">反对</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-val text-gray">{{ task.voteTask.abstainCount || 0 }}</text>
+              <text class="stat-label">弃权</text>
+            </view>
           </view>
+        </view>
+
+        <view class="divider" v-if="currentVoteStrategy === 3 && effectiveItemType !== 1 && effectiveItemType !== 2" style="height: 1px; background: #eee; margin: 16rpx 0;"></view>
+
+        <!-- Strategy 2 or 3: Capital Participation -->
+        <view class="stat-row main-stat" v-if="(currentVoteStrategy === 2 || currentVoteStrategy === 3) && effectiveItemType !== 1">
+          <text class="section-label" v-if="currentVoteStrategy === 3 && !effectiveItemType" style="font-size: 24rpx; color: #666; margin-bottom: 10rpx; display: block; width: 100%;">2. 出资票统计</text>
           <view class="stat-item">
-            <text class="stat-val text-red">{{ statistics.reject }}</text>
-            <text class="stat-label">反对</text>
+            <text class="stat-num">{{ task.voteTask.capitalVotedCount || 0 }}</text>
+            <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '已投(出资)' : '已投票' }}</text>
           </view>
+          <view class="stat-divider"></view>
           <view class="stat-item">
-            <text class="stat-val text-gray">{{ statistics.abstain }}</text>
-            <text class="stat-label">弃权</text>
+            <text class="stat-num">{{ (task.voteTask.totalCount || 0) - (task.voteTask.capitalVotedCount || 0) }}</text>
+            <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '未投(出资)' : '未投票' }}</text>
+          </view>
+        </view>
+
+        <!-- Strategy 2 or 3: Capital Result Details -->
+        <view v-if="(currentVoteStrategy === 2 || currentVoteStrategy === 3) && effectiveItemType !== 1">
+           <view class="stat-row sub-stat">
+            <view class="stat-item">
+              <text class="stat-val text-green">{{ task.voteTask.capitalAgreeCount || 0 }}</text>
+              <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '同意(出资)' : '同意' }}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-val text-red">{{ task.voteTask.capitalRejectCount || 0 }}</text>
+              <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '反对(出资)' : '反对' }}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-val text-gray">{{ task.voteTask.capitalAbstainCount || 0 }}</text>
+              <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '弃权(出资)' : '弃权' }}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -57,7 +97,7 @@
       <!-- Self Vote Area -->
         <view class="vote-area" v-if="task.voteTask.canVote && !isExpired">
           <view class="section-title">本人投票</view>
-          <view class="section-title">
+          <view class="section-title" v-if="!effectiveItemType">
             {{ effectiveItemType === 2 ? '2.出资票' : effectiveItemType === 1 ? '1.人数票' : '投票' }}
           </view>
           <view class="btn-group">
@@ -73,7 +113,7 @@
         <!-- Delegate Vote Area(s) -->
         <view class="vote-area delegate-vote-area" v-for="(delegate, index) in delegateList" :key="index">
           <view class="section-title">代 {{ delegate.fromPartnerName }} 投票</view>
-          <view class="section-title" v-if="delegate.hasVoted !== 1">
+          <view class="section-title" v-if="delegate.hasVoted !== 1 && !effectiveItemType">
             {{ effectiveItemType === 2 ? '2.出资票' : effectiveItemType === 1 ? '1.人数票' : '投票' }}
           </view>
           <view class="btn-group" v-if="delegate.hasVoted !== 1">
@@ -140,57 +180,111 @@
           <!-- Progress Info -->
           <view class="result-section" v-if="voteStatistics.progress">
             <text class="section-title">投票进度</text>
-            <view class="progress-stats">
-              <view class="progress-stat-item">
-                <text class="stat-label">总参与人数：</text>
-                <text class="stat-value">{{ voteStatistics.progress.stat.partnerCount }}</text>
+            
+            <!-- Area 1: Headcount (Strategy 1 or 3) -->
+            <view class="strategy-group" v-if="currentVoteStrategy === 1 || currentVoteStrategy === 3">
+              <text class="section-subtitle" v-if="currentVoteStrategy === 3">1. 人数票统计</text>
+              <view class="progress-stats">
+                <view class="progress-stat-item">
+                  <text class="stat-label">总人数：</text>
+                  <text class="stat-value">{{ voteStatistics.progress.stat.partnerCount }}</text>
+                </view>
+                <view class="progress-stat-item">
+                  <text class="stat-label">已投：</text>
+                  <text class="stat-value">{{ voteStatistics.progress.stat.votedCount }}</text>
+                </view>
+                <view class="progress-stat-item">
+                  <text class="stat-label">未投：</text>
+                  <text class="stat-value">{{ voteStatistics.progress.stat.unvotedCount }}</text>
+                </view>
+                <view class="progress-stat-item">
+                  <text class="stat-label">进度：</text>
+                  <text class="stat-value">{{ voteStatistics.progress.stat.progress }}%</text>
+                </view>
               </view>
-              <view class="progress-stat-item">
-                <text class="stat-label">已投票人数：</text>
-                <text class="stat-value">{{ voteStatistics.progress.stat.votedCount }}</text>
-              </view>
-              <view class="progress-stat-item">
-                <text class="stat-label">未投票人数：</text>
-                <text class="stat-value">{{ voteStatistics.progress.stat.unvotedCount }}</text>
-              </view>
-              <view class="progress-stat-item">
-                <text class="stat-label">投票进度：</text>
-                <text class="stat-value">{{ voteStatistics.progress.stat.progress }}%</text>
+              
+              <view class="visual-vote-distribution">
+                <text class="distribution-title" v-if="currentVoteStrategy !== 3">投票分布</text>
+                <view class="vote-bar-item">
+                  <view class="bar-row">
+                    <text class="bar-option">同意</text>
+                    <text class="bar-count">{{ voteStatistics.progress.stat.agreeCount }}人</text>
+                  </view>
+                  <view class="bar-container">
+                    <view class="bar-fill agree-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.agreeCount, voteStatistics.progress.stat.votedCount) + '%' }"></view>
+                  </view>
+                  <text class="bar-ratio">({{ voteStatistics.progress.stat.agreeRatio }}%)</text>
+                </view>
+                <view class="vote-bar-item">
+                  <view class="bar-row">
+                    <text class="bar-option">反对</text>
+                    <text class="bar-count">{{ voteStatistics.progress.stat.rejectCount }}人</text>
+                  </view>
+                  <view class="bar-container">
+                    <view class="bar-fill reject-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.rejectCount, voteStatistics.progress.stat.votedCount) + '%' }"></view>
+                  </view>
+                  <text class="bar-ratio">({{ voteStatistics.progress.stat.rejectRatio }}%)</text>
+                </view>
+                <view class="vote-bar-item">
+                  <view class="bar-row">
+                    <text class="bar-option">弃权</text>
+                    <text class="bar-count">{{ voteStatistics.progress.stat.abstainCount }}人</text>
+                  </view>
+                  <view class="bar-container">
+                    <view class="bar-fill abstain-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.abstainCount, voteStatistics.progress.stat.votedCount) + '%' }"></view>
+                  </view>
+                  <text class="bar-ratio">({{ voteStatistics.progress.stat.abstainRatio }}%)</text>
+                </view>
               </view>
             </view>
-            
-            <!-- Visual Vote Distribution -->
-            <view class="visual-vote-distribution">
-              <text class="distribution-title">投票分布</text>
-              <view class="vote-bar-item">
-                <view class="bar-row">
-                  <text class="bar-option">同意</text>
-                  <text class="bar-count">{{ voteStatistics.progress.stat.agreeCount }}人</text>
+
+            <!-- Area 2: Capital (Strategy 2 or 3) -->
+            <view class="strategy-group" v-if="currentVoteStrategy === 2 || currentVoteStrategy === 3">
+              <view class="divider" v-if="currentVoteStrategy === 3" style="height: 1px; background: #eee; margin: 30rpx 0;"></view>
+              <text class="section-subtitle" v-if="currentVoteStrategy === 3">2. 出资票统计</text>
+              <view class="progress-stats">
+                <view class="progress-stat-item">
+                  <text class="stat-label">已投人数：</text>
+                  <text class="stat-value">{{ voteStatistics.progress.stat.capitalVotedCount }}</text>
                 </view>
-                <view class="bar-container">
-                  <view class="bar-fill agree-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.agreeCount, voteStatistics.progress.stat.votedCount) + '%' }"></view>
+                <view class="progress-stat-item">
+                  <text class="stat-label">进度：</text>
+                  <text class="stat-value">{{ voteStatistics.progress.stat.capitalProgress }}%</text>
                 </view>
-                <text class="bar-ratio">({{ voteStatistics.progress.stat.agreeRatio }}%)</text>
               </view>
-              <view class="vote-bar-item">
-                <view class="bar-row">
-                  <text class="bar-option">反对</text>
-                  <text class="bar-count">{{ voteStatistics.progress.stat.rejectCount }}人</text>
+              
+              <view class="visual-vote-distribution">
+                <text class="distribution-title" v-if="currentVoteStrategy !== 3">投票分布 (出资)</text>
+                <view class="vote-bar-item">
+                  <view class="bar-row">
+                    <text class="bar-option">同意</text>
+                    <text class="bar-count">{{ voteStatistics.progress.stat.capitalAgreeCount }}</text>
+                  </view>
+                  <view class="bar-container">
+                    <view class="bar-fill agree-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.capitalAgreeCount, voteStatistics.progress.stat.capitalVotedCount) + '%' }"></view>
+                  </view>
+                  <text class="bar-ratio">({{ voteStatistics.progress.stat.capitalAgreeRatio }}%)</text>
                 </view>
-                <view class="bar-container">
-                  <view class="bar-fill reject-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.rejectCount, voteStatistics.progress.stat.votedCount) + '%' }"></view>
+                <view class="vote-bar-item">
+                  <view class="bar-row">
+                    <text class="bar-option">反对</text>
+                    <text class="bar-count">{{ voteStatistics.progress.stat.capitalRejectCount }}</text>
+                  </view>
+                  <view class="bar-container">
+                    <view class="bar-fill reject-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.capitalRejectCount, voteStatistics.progress.stat.capitalVotedCount) + '%' }"></view>
+                  </view>
+                  <text class="bar-ratio">({{ voteStatistics.progress.stat.capitalRejectRatio }}%)</text>
                 </view>
-                <text class="bar-ratio">({{ voteStatistics.progress.stat.rejectRatio }}%)</text>
-              </view>
-              <view class="vote-bar-item">
-                <view class="bar-row">
-                  <text class="bar-option">弃权</text>
-                  <text class="bar-count">{{ voteStatistics.progress.stat.abstainCount }}人</text>
+                <view class="vote-bar-item">
+                  <view class="bar-row">
+                    <text class="bar-option">弃权</text>
+                    <text class="bar-count">{{ voteStatistics.progress.stat.capitalAbstainCount }}</text>
+                  </view>
+                  <view class="bar-container">
+                    <view class="bar-fill abstain-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.capitalAbstainCount, voteStatistics.progress.stat.capitalVotedCount) + '%' }"></view>
+                  </view>
+                  <text class="bar-ratio">({{ voteStatistics.progress.stat.capitalAbstainRatio }}%)</text>
                 </view>
-                <view class="bar-container">
-                  <view class="bar-fill abstain-fill" :style="{ width: calculateBarWidth(voteStatistics.progress.stat.abstainCount, voteStatistics.progress.stat.votedCount) + '%' }"></view>
-                </view>
-                <text class="bar-ratio">({{ voteStatistics.progress.stat.abstainRatio }}%)</text>
               </view>
             </view>
           </view>
@@ -334,6 +428,7 @@ const taskId = ref(null)
 const isAdmin = ref(false)
 const delegateList = ref([])
 const voteStatusText = ref('')
+const voteStatistics = ref({})
 const initialStrategy = ref(null)
 const initialItemType = ref(null)
 const selfPeopleOption = ref(null)
@@ -412,6 +507,16 @@ const effectiveItemType = computed(() => {
   if (vt && vt.itemType !== undefined && vt.itemType !== null) return Number(vt.itemType)
   if (vt && vt.voteType !== undefined && vt.voteType !== null) return Number(vt.voteType)
   return null
+})
+
+const currentVoteStrategy = computed(() => {
+  if (voteStatistics.value && voteStatistics.value.result && voteStatistics.value.result.voteStrategy) {
+    return Number(voteStatistics.value.result.voteStrategy)
+  }
+  if (task.value && task.value.voteTask) {
+    return Number(task.value.voteTask.voteStrategy)
+  }
+  return Number(initialStrategy.value)
 })
 
 const canSubmitSelfCombo = computed(() => {
@@ -674,6 +779,7 @@ const fetchVoteStatus = (id) => {
   }).then(res => {
     if (res.code === 0 || res.code === 1 || res.code === 200) {
       const data = res.data || {}
+      voteStatistics.value = data
       
       // Update task status if changed
       if (task.value && task.value.voteTask) {
@@ -724,6 +830,11 @@ const fetchAdminStats = (id) => {
            task.value.voteTask.abstainCount = stats.abstainCount || 0
            task.value.voteTask.votedCount = stats.votedCount || 0
            task.value.voteTask.totalCount = stats.partnerCount || 0
+           // Capital Stats
+           task.value.voteTask.capitalAgreeCount = stats.capitalAgreeCount || 0
+           task.value.voteTask.capitalRejectCount = stats.capitalRejectCount || 0
+           task.value.voteTask.capitalAbstainCount = stats.capitalAbstainCount || 0
+           task.value.voteTask.capitalVotedCount = stats.capitalVotedCount || 0
          }
        }
     }
@@ -1132,6 +1243,13 @@ const goToDelegateCreate = () => {
   font-weight: bold;
   margin: 30rpx 0 24rpx;
   color: #333;
+}
+
+.section-subtitle {
+  font-size: 26rpx;
+  font-weight: bold;
+  margin: 20rpx 0 16rpx;
+  color: #4B5563;
 }
 
 .result-text {
