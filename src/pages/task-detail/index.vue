@@ -96,14 +96,19 @@
       
       <!-- Self Vote Area -->
         <view class="vote-area" v-if="task.voteTask.canVote && !isExpired">
-          <view class="section-title">本人投票</view>
+          <view class="section-title">
+            本人投票
+            <text v-if="task.voteTask.peopleDelegated && !task.voteTask.capitalDelegated" class="text-orange text-xs ml-2" style="font-size: 24rpx; color: #ff9900; margin-left: 10rpx;">(人数票已委托)</text>
+            <text v-if="task.voteTask.capitalDelegated && !task.voteTask.peopleDelegated" class="text-orange text-xs ml-2" style="font-size: 24rpx; color: #ff9900; margin-left: 10rpx;">(出资票已委托)</text>
+            <text v-if="task.voteTask.peopleDelegated && task.voteTask.capitalDelegated" class="text-orange text-xs ml-2" style="font-size: 24rpx; color: #ff9900; margin-left: 10rpx;">(全部权益已委托)</text>
+          </view>
           <view class="section-title" v-if="!effectiveItemType">
             {{ effectiveItemType === 2 ? '2.出资票' : effectiveItemType === 1 ? '1.人数票' : '投票' }}
           </view>
           <view class="btn-group">
-            <button class="vote-btn agree" @click="handleVote(1, 'self')">同意</button>
-            <button class="vote-btn reject" @click="handleVote(2, 'self')">反对</button>
-            <button class="vote-btn abstain" @click="handleVote(3, 'self')">弃权</button>
+            <button class="vote-btn agree" :disabled="isSelfVoteDisabled" @click="handleVote(1, 'self')">同意</button>
+            <button class="vote-btn reject" :disabled="isSelfVoteDisabled" @click="handleVote(2, 'self')">反对</button>
+            <button class="vote-btn abstain" :disabled="isSelfVoteDisabled" @click="handleVote(3, 'self')">弃权</button>
           </view>
           <view class="delegate-create-area">
              <button class="delegate-create-btn" @click="goToDelegateCreate">委托他人投票</button>
@@ -524,18 +529,29 @@ const canSubmitSelfCombo = computed(() => {
 })
 
 const isExpired = computed(() => {
-  if (!task.value || !task.value.voteTask) return false
-  const timeStr = task.value.voteTask.endTime
-  if (!timeStr || timeStr === '进行中') return false
-  try {
-    const target = new Date(timeStr.replace(/-/g, '/')).getTime()
-    return Date.now() > target
-  } catch (e) {
-    return false
-  }
-})
+    if (!task.value || !task.value.voteTask) return false
+    const timeStr = task.value.voteTask.endTime
+    if (!timeStr || timeStr === '进行中') return false
+    try {
+      const target = new Date(timeStr.replace(/-/g, '/')).getTime()
+      return Date.now() > target
+    } catch (e) {
+      return false
+    }
+  })
 
-const isUrgent = (timeStr) => {
+  const isSelfVoteDisabled = computed(() => {
+    const vt = task.value?.voteTask
+    if (!vt) return true
+    
+    const itemType = effectiveItemType.value
+    if (itemType === 1) return vt.peopleDelegated
+    if (itemType === 2) return vt.capitalDelegated
+    
+    return vt.peopleDelegated && vt.capitalDelegated
+  })
+
+  const isUrgent = (timeStr) => {
   if (!timeStr || timeStr === '进行中') return false
   try {
     const target = new Date(timeStr.replace(/-/g, '/')).getTime()
@@ -707,7 +723,10 @@ const fetchDetail = (id) => {
                   delegateeName: null,
                   delegatorName: null,
                   // New field for pending delegated votes
-                  hasPendingDelegatedVote: payload.hasPendingDelegatedVote || false
+                  hasPendingDelegatedVote: payload.hasPendingDelegatedVote || false,
+                  // New fields for specific delegation status
+                  peopleDelegated: payload.peopleDelegated || false,
+                  capitalDelegated: payload.capitalDelegated || false
               }
           }
       } else {
@@ -735,7 +754,9 @@ const fetchDetail = (id) => {
               voterList: voteTaskData ? (voteTaskData.voterList || []) : [],
               delegateeName: voteTaskData ? voteTaskData.delegateeName : payload.delegateeName,
               delegatorName: voteTaskData ? voteTaskData.delegatorName : payload.delegatorName,
-              hasPendingDelegatedVote: (voteTaskData && voteTaskData.hasPendingDelegatedVote) || payload.hasPendingDelegatedVote || false
+              hasPendingDelegatedVote: (voteTaskData && voteTaskData.hasPendingDelegatedVote) || payload.hasPendingDelegatedVote || false,
+              peopleDelegated: (voteTaskData && voteTaskData.peopleDelegated) || payload.peopleDelegated || false,
+              capitalDelegated: (voteTaskData && voteTaskData.capitalDelegated) || payload.capitalDelegated || false
             }
           }
       }
@@ -1035,21 +1056,64 @@ const submitVote = (option, type, delegateData, optionCapital) => {
   }
   const isDelegate = type === 'delegate' || (delegateData && delegateData.fromPartnerId)
   const itemType = effectiveItemType.value
-  if (itemType === 1) {
-    postData.voteOption = Number(option)
-  } else if (itemType === 2) {
-    const capitalValue = optionCapital !== undefined && optionCapital !== null ? optionCapital : option
-    postData.voteOptionCapital = Number(capitalValue)
+
+  if (!isDelegate) {
+      // Self Vote: Check delegation status
+      const peopleDelegated = task.value.voteTask.peopleDelegated
+      const capitalDelegated = task.value.voteTask.capitalDelegated
+
+      if (itemType === 1) {
+          if (peopleDelegated) {
+              uni.showToast({ title: '人数票已委托，无法投票', icon: 'none' })
+              uni.hideLoading()
+              return
+          }
+          postData.voteOption = Number(option)
+      } else if (itemType === 2) {
+          if (capitalDelegated) {
+              uni.showToast({ title: '出资票已委托，无法投票', icon: 'none' })
+              uni.hideLoading()
+              return
+          }
+          const capitalValue = optionCapital !== undefined && optionCapital !== null ? optionCapital : option
+          postData.voteOptionCapital = Number(capitalValue)
+      } else {
+          // Combo / No Item Type
+          
+          // Determine Capital Option (Single button support)
+          let finalCapitalOption = optionCapital
+          if (finalCapitalOption === undefined || finalCapitalOption === null) {
+              finalCapitalOption = option
+          }
+          
+          // Apply Delegation Logic
+          if (!peopleDelegated) {
+              postData.voteOption = Number(option)
+          }
+          
+          if (!capitalDelegated) {
+              postData.voteOptionCapital = Number(finalCapitalOption)
+          }
+          
+          // Validation
+          if (postData.voteOption === undefined && postData.voteOptionCapital === undefined) {
+              uni.hideLoading()
+              uni.showToast({ title: '权益已全部委托', icon: 'none' })
+              return
+          }
+      }
   } else {
-    if (!isDelegate && isComboStrategy.value && (optionCapital === undefined || optionCapital === null)) {
-      uni.hideLoading()
-      uni.showToast({ title: '组合投票需同时提交出资票', icon: 'none' })
-      return
-    }
-    postData.voteOption = Number(option)
-    if (optionCapital !== undefined && optionCapital !== null) {
-      postData.voteOptionCapital = Number(optionCapital)
-    }
+      // Delegate Vote
+      if (itemType === 1) {
+        postData.voteOption = Number(option)
+      } else if (itemType === 2) {
+        const capitalValue = optionCapital !== undefined && optionCapital !== null ? optionCapital : option
+        postData.voteOptionCapital = Number(capitalValue)
+      } else {
+        postData.voteOption = Number(option)
+        const capitalValue = optionCapital !== undefined && optionCapital !== null ? optionCapital : option
+        postData.voteOptionCapital = Number(capitalValue)
+      }
   }
   
   // Double check if it's a delegate vote based on data presence
@@ -1113,10 +1177,37 @@ const checkIsUrgent = (target) => {
 }
 
 const goToDelegateCreate = () => {
-  uni.navigateTo({
-    url: `/pages/delegate-create/index?taskId=${taskId.value}`
-  })
-}
+    let itemType = effectiveItemType.value
+    
+    // Try to infer from strategy if not explicit
+    if (!itemType) {
+        if (currentVoteStrategy.value === 1) itemType = 1
+        else if (currentVoteStrategy.value === 2) itemType = 2
+    }
+
+    if (itemType) {
+      uni.navigateTo({
+        url: `/pages/delegate-create/index?taskId=${taskId.value}&itemType=${itemType}`
+      })
+    } else if (currentVoteStrategy.value === 3) {
+      // Combo strategy with no specific type selected
+      uni.showActionSheet({
+        itemList: ['委托人数票', '委托出资票'],
+        success: function (res) {
+          const type = res.tapIndex + 1 // 1 or 2
+          uni.navigateTo({
+            url: `/pages/delegate-create/index?taskId=${taskId.value}&itemType=${type}`
+          })
+        },
+        fail: function (res) {
+          console.log(res.errMsg)
+        }
+      })
+    } else {
+        // Fallback
+        uni.showToast({ title: '无法确定委托类型', icon: 'none' })
+    }
+  }
 
 </script>
 

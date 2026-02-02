@@ -53,11 +53,15 @@ const partnerIndex = ref(-1)
 const proofFile = ref('')
 const submitting = ref(false)
 const uploadedPath = ref('') // Server path
+const delegateType = ref(null)
 
 onLoad((options) => {
   if (options.taskId) {
     voteTaskId.value = options.taskId
     fetchPartners()
+  }
+  if (options.itemType) {
+    delegateType.value = Number(options.itemType)
   }
 })
 
@@ -79,11 +83,27 @@ const fetchPartners = () => {
         list = res.data.records
       }
       
-      partnerList.value = list.map(p => ({
+      const myId = uni.getStorageSync('userInfo').id
+      
+      partnerList.value = list.filter(p => {
+        const pId = p.id || p.userId || p.partnerId
+        // 1. Exclude self
+        if (pId && pId === myId) return false
+        
+        // 2. Exclude Admin/Super Admin
+        // Check by role/flag
+        if (p.role === 'admin' || p.username === 'admin' || p.isAdmin === true) return false
+        
+        // Check by name (specifically "超管")
+        const name = p.name || p.realName || p.username || p.nickName
+        if (name === '超管' || name === '超级管理员' || name === 'Super Admin') return false
+        
+        return true
+      }).map(p => ({
         id: p.id || p.userId || p.partnerId,
         name: p.name || p.realName || p.username || p.nickName,
         avatar: p.avatar
-      })).filter(p => p.id && p.id !== uni.getStorageSync('userInfo').id)
+      }))
     }
     uni.stopPullDownRefresh()
   }).catch(err => {
@@ -182,6 +202,12 @@ const handleSubmit = () => {
     uni.showToast({ title: '所选合伙人信息无效', icon: 'none' })
     return
   }
+  
+  if (!delegateType.value) {
+    uni.showToast({ title: '缺少委托类型', icon: 'none' })
+    return
+  }
+
   const userInfo = uni.getStorageSync('userInfo')
 
   request({
@@ -191,7 +217,8 @@ const handleSubmit = () => {
       voteTaskId: Number(voteTaskId.value),
       toPartnerId: Number(selectedPartner.id),
       // fromPartnerId: Number(userInfo.id), // Auto-acquired on backend
-      proofFile: uploadedPath.value
+      proofFile: uploadedPath.value,
+      delegateType: delegateType.value
     }
   }).then(res => {
     submitting.value = false
