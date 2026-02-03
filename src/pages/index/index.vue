@@ -146,7 +146,7 @@ const fetchTasks = () => {
     return request({
       url: '/user/h5/proposal/list',
       method: 'GET',
-      data: { pageNum: 1, pageSize: 20 }
+      data: { pageNum: 1, pageSize: 1000 }
     }).then(res => {
       if (res.code === 0 && res.msg && res.msg.includes('权限不足')) {
         uni.showToast({ title: res.msg, icon: 'none' })

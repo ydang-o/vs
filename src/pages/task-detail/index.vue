@@ -2,7 +2,10 @@
   <view class="container">
     <view class="detail-card" v-if="task && task.proposal">
       <view class="header">
-        <text class="title">{{ task.proposal.title }}</text>
+        <text class="title">
+          {{ task.proposal.title }}
+          <text class="strategy-desc" v-if="task.proposal.voteStrategyDesc" style="font-size: 24rpx; font-weight: normal; color: #666; margin-left: 10rpx;">({{ task.proposal.voteStrategyDesc }})</text>
+        </text>
         <text class="delegate-hint text-orange" v-if="task.voteTask && task.voteTask.delegateeName">
           (您已委托 {{ task.voteTask.delegateeName }} 投票)
         </text>
@@ -149,14 +152,18 @@
         <view class="admin-area" v-if="isAdmin && task.voteTask.voterList && task.voteTask.voterList.length > 0">
           <view class="section-title">投票人详情 (管理员可见)</view>
           <view class="voter-list">
-            <view class="voter-header">
-              <text class="th">姓名</text>
-              <text class="th">状态</text>
+            <view class="voter-header" style="display: flex; padding: 10rpx 0; border-bottom: 1px solid #eee;">
+              <text class="th" style="flex: 1; font-weight: bold; color: #333; font-size: 28rpx;">姓名</text>
+              <text class="th" style="width: 140rpx; text-align: center; font-weight: bold; color: #333; font-size: 28rpx;" v-if="currentVoteStrategy === 1 || currentVoteStrategy === 3">人数票</text>
+              <text class="th" style="width: 140rpx; text-align: center; font-weight: bold; color: #333; font-size: 28rpx;" v-if="currentVoteStrategy === 2 || currentVoteStrategy === 3">出资票</text>
             </view>
-            <view class="voter-item" v-for="(voter, idx) in task.voteTask.voterList" :key="idx">
-              <text class="voter-name">{{ voter.realName || voter.name || voter.username || '未知' }}</text>
-              <text class="voter-status" :class="getVoteColorClass(voter.voteOption)">
+            <view class="voter-item" v-for="(voter, idx) in task.voteTask.voterList" :key="idx" style="display: flex; align-items: center; padding: 16rpx 0; border-bottom: 1px dashed #E5E7EB;">
+              <text class="voter-name" style="flex: 1; color: #374151; font-size: 28rpx;">{{ voter.realName || voter.name || voter.username || '未知' }}</text>
+              <text class="voter-status" style="width: 140rpx; text-align: center; font-size: 28rpx;" v-if="currentVoteStrategy === 1 || currentVoteStrategy === 3" :class="getVoteColorClass(voter.voteOption)">
                 {{ getVoteText(voter.voteOption) }}
+              </text>
+              <text class="voter-status" style="width: 140rpx; text-align: center; font-size: 28rpx;" v-if="currentVoteStrategy === 2 || currentVoteStrategy === 3" :class="getVoteColorClass(voter.voteOptionCapital)">
+                {{ getVoteText(voter.voteOptionCapital) }}
               </text>
             </view>
           </view>
@@ -301,7 +308,10 @@
               <view class="record-item" v-for="(record, index) in voteStatistics.progress.records" :key="index">
                 <view class="record-header">
                   <text class="record-name">{{ record.name }}</text>
-                  <text :class="['record-vote', getVoteClass(record.voteOption)]">{{ record.voteOption }}</text>
+                  <view class="record-votes" style="display: flex; align-items: center;">
+                    <text v-if="(currentVoteStrategy === 1 || currentVoteStrategy === 3) && effectiveItemType !== 2" :class="['record-vote', getVoteClass(record.voteOption)]">{{ getVoteText(record.voteOption) }}</text>
+                    <text v-if="(currentVoteStrategy === 2 || currentVoteStrategy === 3) && effectiveItemType !== 1" :class="['record-vote', getVoteClass(record.voteOptionCapital)]" style="margin-left: 12rpx;">{{ getVoteText(record.voteOptionCapital) }}<text style="font-size: 20rpx; font-weight: normal; color: #999;" v-if="!effectiveItemType">(出资)</text></text>
+                  </view>
                 </view>
                 <view class="record-details">
                   <text class="record-time" v-if="record.voteTime">投票时间：{{ record.voteTime }}</text>
@@ -515,13 +525,37 @@ const effectiveItemType = computed(() => {
 })
 
 const currentVoteStrategy = computed(() => {
+  let strategy = null
   if (voteStatistics.value && voteStatistics.value.result && voteStatistics.value.result.voteStrategy) {
-    return Number(voteStatistics.value.result.voteStrategy)
+    strategy = voteStatistics.value.result.voteStrategy
+  } else if (task.value && task.value.voteTask && task.value.voteTask.voteStrategy) {
+    strategy = task.value.voteTask.voteStrategy
+  } else {
+    strategy = initialStrategy.value
   }
-  if (task.value && task.value.voteTask) {
-    return Number(task.value.voteTask.voteStrategy)
+  
+  const val = Number(strategy)
+  
+  // Auto-correct to 3 if we detect capital votes or description says so
+  if (val !== 3) {
+      // Check description
+      if (task.value && task.value.proposal && task.value.proposal.voteStrategyDesc) {
+          if (task.value.proposal.voteStrategyDesc.includes('+') || task.value.proposal.voteStrategyDesc.includes('组合')) {
+              return 3
+          }
+      }
+      
+      // Check voter list for capital votes
+      if (task.value && task.value.voteTask && task.value.voteTask.voterList) {
+          const hasCapitalVotes = task.value.voteTask.voterList.some(v => {
+            const vVal = Number(v.voteOptionCapital)
+            return vVal === 1 || vVal === 2 || vVal === 3
+          })
+          if (hasCapitalVotes) return 3
+      }
   }
-  return Number(initialStrategy.value)
+
+  return (val === 1 || val === 2 || val === 3) ? val : 1
 })
 
 const canSubmitSelfCombo = computed(() => {
@@ -702,7 +736,8 @@ const fetchDetail = (id) => {
               proposal: {
                   title: payload.title,
                   content: payload.content || '暂无详细描述',
-                  imageUrl: resolveImageUrl(payload.imageUrl)
+                  imageUrl: resolveImageUrl(payload.imageUrl),
+                  voteStrategyDesc: payload.voteStrategyDesc
               },
               voteTask: {
                   voteTaskId: payload.voteTaskId,
@@ -738,7 +773,8 @@ const fetchDetail = (id) => {
             proposal: {
               title: proposalData ? proposalData.title : (payload.title || ''),
               content: proposalData ? (proposalData.content || '暂无详细描述') : (payload.content || '暂无详细描述'),
-              imageUrl: resolveImageUrl(proposalData ? proposalData.imageUrl : payload.imageUrl)
+              imageUrl: resolveImageUrl(proposalData ? proposalData.imageUrl : payload.imageUrl),
+              voteStrategyDesc: proposalData ? proposalData.voteStrategyDesc : payload.voteStrategyDesc
             },
             voteTask: {
               voteTaskId: voteTaskData ? voteTaskData.voteTaskId : id,
@@ -817,6 +853,16 @@ const fetchVoteStatus = (id) => {
                   }
               }
           }
+          const stat = data.progress && data.progress.stat ? data.progress.stat : {}
+          if (stat.agreeCount !== undefined) task.value.voteTask.agreeCount = stat.agreeCount
+          if (stat.rejectCount !== undefined) task.value.voteTask.rejectCount = stat.rejectCount
+          if (stat.abstainCount !== undefined) task.value.voteTask.abstainCount = stat.abstainCount
+          if (stat.votedCount !== undefined) task.value.voteTask.votedCount = stat.votedCount
+          if (stat.partnerCount !== undefined) task.value.voteTask.totalCount = stat.partnerCount
+          if (stat.capitalAgreeCount !== undefined) task.value.voteTask.capitalAgreeCount = stat.capitalAgreeCount
+          if (stat.capitalRejectCount !== undefined) task.value.voteTask.capitalRejectCount = stat.capitalRejectCount
+          if (stat.capitalAbstainCount !== undefined) task.value.voteTask.capitalAbstainCount = stat.capitalAbstainCount
+          if (stat.capitalVotedCount !== undefined) task.value.voteTask.capitalVotedCount = stat.capitalVotedCount
       }
 
       if (data.taskStatus === 3 || data.result) {
@@ -1048,12 +1094,12 @@ const handleComboSubmit = (type, delegateData) => {
 }
 
 const submitVote = (option, type, delegateData, optionCapital) => {
-  uni.showLoading({ title: '提交中' })
-  
-  let url = '/user/h5/vote/submit'
-  const postData = {
-    voteTaskId: Number(taskId.value)
-  }
+    uni.showLoading({ title: '提交中' })
+    
+    let url = '/user/vote/submit'
+    const postData = {
+      voteTaskId: Number(taskId.value)
+    }
   const isDelegate = type === 'delegate' || (delegateData && delegateData.fromPartnerId)
   const itemType = effectiveItemType.value
 
