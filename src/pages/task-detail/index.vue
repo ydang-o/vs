@@ -30,23 +30,26 @@
 
       <!-- Statistics Area for All Users -->
       <view class="stats-card" v-if="task && task.voteTask">
+        
         <!-- Strategy 1 or 3: Headcount Participation -->
-        <view class="stat-row main-stat" v-if="(currentVoteStrategy === 1 || currentVoteStrategy === 3) && effectiveItemType !== 2">
-          <text class="section-label" v-if="currentVoteStrategy === 3 && !effectiveItemType" style="font-size: 24rpx; color: #666; margin-bottom: 10rpx; display: block; width: 100%;">1. 人数票统计</text>
-          <view class="stat-item">
-            <text class="stat-num">{{ task.voteTask.votedCount || 0 }}</text>
-            <text class="stat-label">已投票</text>
+        <view class="stat-group" v-if="(currentVoteStrategy === 1 || currentVoteStrategy === 3) && effectiveItemType !== 2">
+          <view class="group-header" v-if="currentVoteStrategy === 3 && !effectiveItemType">
+            <text class="group-title">1. 人数票统计</text>
           </view>
-          <view class="stat-divider"></view>
-          <view class="stat-item">
-            <text class="stat-num">{{ (task.voteTask.totalCount || 0) - (task.voteTask.votedCount || 0) }}</text>
-            <text class="stat-label">未投票</text>
+          
+          <view class="stat-row main-stat">
+            <view class="stat-item">
+              <text class="stat-num">{{ task.voteTask.votedCount || 0 }}</text>
+              <text class="stat-label">已投票</text>
+            </view>
+            <view class="stat-divider"></view>
+            <view class="stat-item">
+              <text class="stat-num">{{ (task.voteTask.totalCount || 0) - (task.voteTask.votedCount || 0) }}</text>
+              <text class="stat-label">未投票</text>
+            </view>
           </view>
-        </view>
 
-        <!-- Strategy 1 or 3: Headcount Result Details -->
-        <view v-if="(currentVoteStrategy === 1 || currentVoteStrategy === 3) && effectiveItemType !== 2">
-           <view class="stat-row sub-stat">
+          <view class="stat-row sub-stat">
             <view class="stat-item">
               <text class="stat-val text-green">{{ task.voteTask.agreeCount || 0 }}</text>
               <text class="stat-label">同意</text>
@@ -62,25 +65,27 @@
           </view>
         </view>
 
-        <view class="divider" v-if="currentVoteStrategy === 3 && effectiveItemType !== 1 && effectiveItemType !== 2" style="height: 1px; background: #eee; margin: 16rpx 0;"></view>
+        <view class="divider" v-if="currentVoteStrategy === 3 && effectiveItemType !== 1 && effectiveItemType !== 2" style="height: 1px; background: #E5E7EB; margin: 30rpx 0;"></view>
 
         <!-- Strategy 2 or 3: Capital Participation -->
-        <view class="stat-row main-stat" v-if="(currentVoteStrategy === 2 || currentVoteStrategy === 3) && effectiveItemType !== 1">
-          <text class="section-label" v-if="currentVoteStrategy === 3 && !effectiveItemType" style="font-size: 24rpx; color: #666; margin-bottom: 10rpx; display: block; width: 100%;">2. 出资票统计</text>
-          <view class="stat-item">
-            <text class="stat-num">{{ task.voteTask.capitalVotedCount || 0 }}</text>
-            <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '已投(出资)' : '已投票' }}</text>
+        <view class="stat-group" v-if="(currentVoteStrategy === 2 || currentVoteStrategy === 3) && effectiveItemType !== 1">
+          <view class="group-header" v-if="currentVoteStrategy === 3 && !effectiveItemType">
+            <text class="group-title">2. 出资票统计</text>
           </view>
-          <view class="stat-divider"></view>
-          <view class="stat-item">
-            <text class="stat-num">{{ (task.voteTask.totalCount || 0) - (task.voteTask.capitalVotedCount || 0) }}</text>
-            <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '未投(出资)' : '未投票' }}</text>
-          </view>
-        </view>
 
-        <!-- Strategy 2 or 3: Capital Result Details -->
-        <view v-if="(currentVoteStrategy === 2 || currentVoteStrategy === 3) && effectiveItemType !== 1">
-           <view class="stat-row sub-stat">
+          <view class="stat-row main-stat">
+            <view class="stat-item">
+              <text class="stat-num">{{ task.voteTask.capitalVotedCount || 0 }}</text>
+              <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '已投(出资)' : '已投票' }}</text>
+            </view>
+            <view class="stat-divider"></view>
+            <view class="stat-item">
+              <text class="stat-num">{{ (task.voteTask.totalCount || 0) - (task.voteTask.capitalVotedCount || 0) }}</text>
+              <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '未投(出资)' : '未投票' }}</text>
+            </view>
+          </view>
+
+          <view class="stat-row sub-stat">
             <view class="stat-item">
               <text class="stat-val text-green">{{ task.voteTask.capitalAgreeCount || 0 }}</text>
               <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '同意(出资)' : '同意' }}</text>
@@ -444,11 +449,16 @@ const isAdmin = ref(false)
 const delegateList = ref([])
 const voteStatusText = ref('')
 const voteStatistics = ref({})
+const showResultModal = ref(false)
 const initialStrategy = ref(null)
 const initialItemType = ref(null)
 const selfPeopleOption = ref(null)
 const selfCapitalOption = ref(null)
 const delegateSelections = ref({})
+
+const closeResultModal = () => {
+  showResultModal.value = false
+}
 
 const isAdminUser = (info) => {
   return !!info && (info.role === 'admin' || info.username === 'admin' || info.isAdmin === true)
@@ -863,6 +873,18 @@ const fetchVoteStatus = (id) => {
           if (stat.capitalRejectCount !== undefined) task.value.voteTask.capitalRejectCount = stat.capitalRejectCount
           if (stat.capitalAbstainCount !== undefined) task.value.voteTask.capitalAbstainCount = stat.capitalAbstainCount
           if (stat.capitalVotedCount !== undefined) task.value.voteTask.capitalVotedCount = stat.capitalVotedCount
+          
+          // Map records to voterList if available (ensures admin list is populated)
+          if (data.progress && data.progress.records) {
+              const records = data.progress.records
+              // Only update if we have records, and we apply the same robust mapping
+              task.value.voteTask.voterList = records.map(r => ({
+                 ...r,
+                 // Compatibility mapping
+                 voteOption: r.voteOption !== undefined ? r.voteOption : (r.vote_option !== undefined ? r.vote_option : r.peopleVoteOption),
+                 voteOptionCapital: r.voteOptionCapital !== undefined ? r.voteOptionCapital : (r.vote_option_capital !== undefined ? r.vote_option_capital : r.capitalVoteOption)
+              }))
+          }
       }
 
       if (data.taskStatus === 3 || data.result) {
@@ -887,7 +909,13 @@ const fetchAdminStats = (id) => {
        if (task.value && task.value.voteTask) {
          // Merge voter list from admin endpoint
          if (data.voteRecords) {
-           task.value.voteTask.voterList = data.voteRecords
+           console.log('Admin Stats VoteRecords:', data.voteRecords)
+           task.value.voteTask.voterList = data.voteRecords.map(r => ({
+               ...r,
+               // Compatibility mapping for snake_case or other variations
+               voteOption: r.voteOption !== undefined ? r.voteOption : (r.vote_option !== undefined ? r.vote_option : r.peopleVoteOption),
+               voteOptionCapital: r.voteOptionCapital !== undefined ? r.voteOptionCapital : (r.vote_option_capital !== undefined ? r.vote_option_capital : r.capitalVoteOption)
+           }))
          }
          // Merge stats
          const stats = data.voteStats
@@ -1950,5 +1978,20 @@ const goToDelegateCreate = () => {
 
 .result-value.failed {
   color: #ef4444;
+}
+
+.group-header {
+  padding: 10rpx 0 20rpx;
+  border-bottom: 1px dashed #E5E7EB;
+  margin-bottom: 24rpx;
+}
+.group-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #4B5563;
+  display: block;
+}
+.stat-group {
+  margin-bottom: 10rpx;
 }
 </style>
