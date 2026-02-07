@@ -13,7 +13,7 @@
           ({{ task.voteTask.delegatorName }} 委托您投票)
         </text>
         <view class="meta">
-          <text>截止时间：{{ task.voteTask.endTime }}</text>
+          <text>截止时间：{{ task.voteTask.status === 2 ? '已结束' : task.voteTask.endTime }}</text>
         </view>
       </view>
       
@@ -32,8 +32,8 @@
       <view class="stats-card" v-if="task && task.voteTask">
         
         <!-- Strategy 1 or 3: Headcount Participation -->
-        <view class="stat-group" v-if="(currentVoteStrategy === 1 || currentVoteStrategy === 3) && effectiveItemType !== 2">
-          <view class="group-header" v-if="currentVoteStrategy === 3 && !effectiveItemType">
+        <view class="stat-group" v-if="currentVoteStrategy === 1 || currentVoteStrategy === 3">
+          <view class="group-header" v-if="currentVoteStrategy === 3">
             <text class="group-title">1. 人数票统计</text>
           </view>
           
@@ -65,38 +65,38 @@
           </view>
         </view>
 
-        <view class="divider" v-if="currentVoteStrategy === 3 && effectiveItemType !== 1 && effectiveItemType !== 2" style="height: 1px; background: #E5E7EB; margin: 30rpx 0;"></view>
+        <view class="divider" v-if="currentVoteStrategy === 3" style="height: 1px; background: #E5E7EB; margin: 30rpx 0;"></view>
 
         <!-- Strategy 2 or 3: Capital Participation -->
-        <view class="stat-group" v-if="(currentVoteStrategy === 2 || currentVoteStrategy === 3) && effectiveItemType !== 1">
-          <view class="group-header" v-if="currentVoteStrategy === 3 && !effectiveItemType">
+        <view class="stat-group" v-if="currentVoteStrategy === 2 || currentVoteStrategy === 3">
+          <view class="group-header" v-if="currentVoteStrategy === 3">
             <text class="group-title">2. 出资票统计</text>
           </view>
 
           <view class="stat-row main-stat">
             <view class="stat-item">
               <text class="stat-num">{{ task.voteTask.capitalVotedCount || 0 }}</text>
-              <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '已投(出资)' : '已投票' }}</text>
+              <text class="stat-label">{{ currentVoteStrategy === 3 ? '已投(出资)' : '已投票' }}</text>
             </view>
             <view class="stat-divider"></view>
             <view class="stat-item">
               <text class="stat-num">{{ (task.voteTask.totalCount || 0) - (task.voteTask.capitalVotedCount || 0) }}</text>
-              <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '未投(出资)' : '未投票' }}</text>
+              <text class="stat-label">{{ currentVoteStrategy === 3 ? '未投(出资)' : '未投票' }}</text>
             </view>
           </view>
 
           <view class="stat-row sub-stat">
             <view class="stat-item">
               <text class="stat-val text-green">{{ task.voteTask.capitalAgreeCount || 0 }}</text>
-              <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '同意(出资)' : '同意' }}</text>
+              <text class="stat-label">{{ currentVoteStrategy === 3 ? '同意(出资)' : '同意' }}</text>
             </view>
             <view class="stat-item">
               <text class="stat-val text-red">{{ task.voteTask.capitalRejectCount || 0 }}</text>
-              <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '反对(出资)' : '反对' }}</text>
+              <text class="stat-label">{{ currentVoteStrategy === 3 ? '反对(出资)' : '反对' }}</text>
             </view>
             <view class="stat-item">
               <text class="stat-val text-gray">{{ task.voteTask.capitalAbstainCount || 0 }}</text>
-              <text class="stat-label">{{ (currentVoteStrategy === 3 && !effectiveItemType) ? '弃权(出资)' : '弃权' }}</text>
+              <text class="stat-label">{{ currentVoteStrategy === 3 ? '弃权(出资)' : '弃权' }}</text>
             </view>
           </view>
         </view>
@@ -365,7 +365,7 @@
               </view>
               
               <!-- People Vote Result (show only if strategy is people or combination) -->
-              <view class="sub-result-section" v-if="voteStatistics.result.voteStrategy === 1 || voteStatistics.result.voteStrategy === 3">
+              <view class="sub-result-section" v-if="Number(voteStatistics.result.voteStrategy) === 1 || Number(voteStatistics.result.voteStrategy) === 3">
                 <text class="sub-result-title">人数票结果</text>
                 <view class="sub-result-details">
                   <view class="result-item">
@@ -398,7 +398,7 @@
               </view>
               
               <!-- Capital Vote Result (show only if strategy is capital or combination) -->
-              <view class="sub-result-section" v-if="voteStatistics.result.voteStrategy === 2 || voteStatistics.result.voteStrategy === 3">
+              <view class="sub-result-section" v-if="Number(voteStatistics.result.voteStrategy) === 2 || Number(voteStatistics.result.voteStrategy) === 3">
                 <text class="sub-result-title">出资票结果</text>
                 <view class="sub-result-details">
                   <view class="result-item">
@@ -1640,7 +1640,7 @@ const goToDelegateCreate = () => {
 .modal-body {
   padding: 15rpx;
   flex: 1;
-  max-height: 60vh;
+  min-height: 0;
 }
 
 .result-section {
